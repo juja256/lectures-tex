@@ -23,26 +23,92 @@ Trivial way to prove the relation is to send $\mathbf{a,b}$ to the verifier $\ma
 
 Firtsly, let's combine statements $P = \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle \wedge \langle \mathbf{a,b} \rangle = c$ into a single statement by multiplying the second one by a random $r \in \mathbb{F}_p$ and some orthogonal generator $B \in \mathbb{G}$, summing up:
 $$
-\mathcal{R}'_{ip} = \{ (\mathbf{G,H}, P', c; \mathbf{a,b}) \vert P' = \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle + [\langle \mathbf{a,b} \rangle]Q \}
+\mathcal{R}'_{ip} = \{ (\mathbf{G,H}, Q, P'; \mathbf{a,b}) \vert P' = \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle + [\langle \mathbf{a,b} \rangle]Q \}
 $$
 Where $P' = P + [cr]B, Q=[r]B$. Intuitively, if prover $\mathcal{P}$ can prove $\mathcal{R}'_{ip}$ for all $r \in \mathbb{F}_p$, then it can prove $\mathcal{R}_{ip}$ for any valid witness. We use such transformation to compress each vector in half and arrive to the same form of commitment
 $$P' = \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle + [\langle \mathbf{a,b} \rangle]Q$$
 
-\subsubsection{Proving $\mathcal{R}'_{ip}$}
+\subsubsection{Inner-product compression}
 
-Here we describe the \textbf{inner-product argument} protocol $\Pi_{ip}$ for the relation $\mathcal{R}'_{ip}$. 
-Firstly, assuming that $n = 2^d$ define by $\mathbf{G_{lo}, G_{hi}} \in \mathbb{G}^{n/2}$ -- lower and higher halves of vector $\mathbf{G}$ and $\mathbf{a_{lo}, a_{hi}} \in \mathbb{F}_{n/2}$ -- lower and higher halves of $\mathbf{a} \in \mathbb{F}_p^{n}$.
+Here we describe \textbf{inner-product compression} algorithm -- main building block of the interactive \textbf{inner-product} procotol.
+Firstly, assuming that $n = 2^d$ define by $\mathbf{G_{lo}} = (G_1, \dots, G_{n/2}), \mathbf{G_{hi}} = (G_{n/2+1},\dots, G_n) \in \mathbb{G}^{n/2}$ -- lower and higher halves of vector $\mathbf{G}$ and $\mathbf{a_{lo}} = (a_1, \dots, a_{n/2}), \mathbf{a_{hi}} = (a_{n/2+1},\dots,a_n) \in \mathbb{F}_{n/2}$ -- lower and higher halves of $\mathbf{a} \in \mathbb{F}_p^{n}$.
 
 Let $u_k \in \mathbb{F}_p$ - be some scalar, define compressed vectors:
 \begin{align}
-\mathbf{a}^{(k-1)} &= \mathbf{a}_{lo} \cdot u_k + u_k^{-1} \cdot \mathbf{a}_{hi} \\
-\mathbf{b}^{(k-1)} &= \mathbf{b}_{lo} \cdot u_k^{-1} + u_k \cdot \mathbf{b}_{hi} \\
-\mathbf{G}^{(k-1)} &= \mathbf{G}_{lo} \cdot u_k^{-1} + u_k \cdot \mathbf{G}_{hi} \\
-\mathbf{H}^{(k-1)} &= \mathbf{H}_{lo} \cdot u_k + u_k^{-1} \cdot \mathbf{H}_{hi}
+    \mathbf{a}^{(k-1)} &= \mathbf{a_{lo}} \cdot u_k + u_k^{-1} \cdot \mathbf{a_{hi}} \\
+    \mathbf{b}^{(k-1)} &= \mathbf{b_{lo}} \cdot u_k^{-1} + u_k \cdot \mathbf{b_{hi}} \\
+    \mathbf{G}^{(k-1)} &= \mathbf{G_{lo}} \cdot u_k^{-1} + u_k \cdot \mathbf{G_{hi}} \\
+    \mathbf{H}^{(k-1)} &= \mathbf{H_{lo}} \cdot u_k + u_k^{-1} \cdot \mathbf{H_{hi}}
 \end{align}
 
-Define $P_k \gets P'$ and define $P_{k-1}$ using compressed vectors to have the same form as $P_k$:
+Define $P_k \gets P' =  \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle + [\langle \mathbf{a,b} \rangle]Q$ and define $P_{k-1}$ using compressed vectors to have the same form as $P_k$:
 $$P_{k-1} = \langle \mathbf{a}^{(k-1)}, \mathbf{G}^{(k-1)} \rangle + \langle \mathbf{b}^{(k-1)}, \mathbf{H}^{(k-1)} \rangle + [\langle \mathbf{a}^{(k-1)}, \mathbf{b}^{(k-1)} \rangle]Q $$
+
+Subsituting compressed vectors and applying bilinearity property of inner product we get:
+\begin{align}
+    P_{k-1} = & \langle \mathbf{a_{lo}}, \mathbf{G_{lo}}\rangle + \langle \mathbf{a_{hi}}, \mathbf{G_{hi}}\rangle &+ u_k^2\langle \mathbf{a_{lo}}, \mathbf{G_{hi}}\rangle + u_k^{-2}\langle \mathbf{a_{hi}}, \mathbf{G_{lo}}\rangle + \\
+    & \langle \mathbf{b_{lo}}, \mathbf{H_{lo}}\rangle + \langle \mathbf{b_{hi}}, \mathbf{H_{hi}}\rangle &+ u_k^2\langle \mathbf{b_{hi}}, \mathbf{H_{lo}}\rangle + u_k^{-2}\langle \mathbf{b_{lo}}, \mathbf{H_{hi}}\rangle + \\
+    & [\langle \mathbf{a_{lo}}, \mathbf{b_{lo}}\rangle + \langle \mathbf{a_{hi}}, \mathbf{b_{hi}}\rangle]Q &+ [u_k^2\langle \mathbf{a_{lo}}, \mathbf{b_{hi}}\rangle + u_k^{-2}\langle \mathbf{a_{hi}}, \mathbf{b_{lo}}\rangle]Q
+\end{align}
+
+Note that $\langle \mathbf{a_{lo}}, \mathbf{G_{lo}}\rangle + \langle \mathbf{a_{hi}}, \mathbf{G_{hi}}\rangle = \langle \mathbf{a,G}\rangle$ so that the first two columns of $P_{k-1}$ definition precisecly contains $P_{k} = P'$:
+$$P_{k} = \langle \mathbf{a_{lo}}, \mathbf{G_{lo}}\rangle + \langle \mathbf{a_{hi}}, \mathbf{G_{hi}}\rangle + \langle \mathbf{b_{lo}}, \mathbf{H_{lo}}\rangle + \langle \mathbf{b_{hi}}, \mathbf{H_{hi}}\rangle + [\langle \mathbf{a_{lo}}, \mathbf{b_{lo}}\rangle + \langle \mathbf{a_{hi}}, \mathbf{b_{hi}}\rangle]Q$$
+
+Define cross-terms $L_k, R_k$ of $P_{k-1}$ such that:
+\begin{align}
+    P_{k-1} &= P_k + [u_k^2] L_k + [u_k^{-2}] R_k \\
+    L_{k} &= \langle \mathbf{a_{lo}}, \mathbf{G_{hi}}\rangle + \langle \mathbf{b_{hi}}, \mathbf{H_{lo}}\rangle + [\langle \mathbf{a_{lo}}, \mathbf{b_{hi}}\rangle]Q \\
+    R_{k} &= \langle \mathbf{a_{hi}}, \mathbf{G_{lo}}\rangle + \langle \mathbf{b_{lo}}, \mathbf{H_{hi}}\rangle + [\langle \mathbf{a_{hi}}, \mathbf{b_{lo}}\rangle]Q
+\end{align}
+
+Here we come up with some kind of statement compression algorithm reducing size of all vectors in half per compression step. Repeating comression algorithm $k$ times we end up with vectors $\mathbf{a}^{(0)}, \mathbf{b}^{(0)}, \mathbf{G}^{(0)}, \mathbf{H}^{(0)}$ each of length one and $P_0$ containing all accumulated cross-terms:
+\begin{align}
+    P_0 &= [a_1^{(0)}]G_1^{(0)} + [b_1^{(0)}]H_1^{(0)} + [a_1^{(0)}b_1^{(0)}]Q \\
+    P_0 &= P_k + \sum_{i=1}^d ([u_i^2]L_i + [u_i^{-2}]R_i)
+\end{align}
+
+Recalling that $P_k = P'$, the final compressed statement asserting inner-product value will have the following form:
+$$P' + \sum_{i=1}^d ([u_i^2]L_i + [u_i^{-2}]R_i) = [a_1^{(0)}]G_1^{(0)} + [b_1^{(0)}]H_1^{(0)} + [a_1^{(0)}b_1^{(0)}]Q$$
+
+\subsubsection{Proving $\mathcal{R}'_{ip}$}
+
+Let's describe the \textbf{inner-product} protocol $\Pi_{ip}$ for relation $\mathcal{R}'_{ip}$. 
+\begin{definition}
+    The \textbf{inner-product} protocol $\Pi_{ip} = (\mathcal{P}, \mathcal{V})$ for relation $\mathcal{R}'_{ip} = \{ (\mathbf{G,H}, Q, P'; \mathbf{a,b}) \vert P' = \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle + [\langle \mathbf{a,b} \rangle]Q \}$, where all vectors have length $n=2^d$ with prover $\mathcal{P}$, verifier $\mathcal{V}$ is defined as follows:
+    \begin{itemize}
+        \item Prover $\mathcal{P}$ sets $$(k, \mathbf{a}^{(k)}, \mathbf{b}^{(k)}, \mathbf{G}^{(k)}, \mathbf{H}^{(k)}, P_k) \gets (n, \mathbf{a,b,G,H},P')$$
+        \item Verifier $\mathcal{V}$ sets $$(k, \mathbf{G}^{(k)}, \mathbf{H}^{(k)}, P_k) \gets (n, \mathbf{G,H},P')$$
+        \item While $k > 0$ then:
+            \begin{itemize}
+                \item Prover $\mathcal{P}$ computes 
+                    \begin{align*}
+                        L_{k} &= \langle \mathbf{a_{lo}}^{(k)}, \mathbf{G_{hi}}^{(k)}\rangle + \langle \mathbf{b_{hi}}^{(k)}, \mathbf{H_{lo}}^{(k)}\rangle + [\langle \mathbf{a_{lo}}^{(k)}, \mathbf{b_{hi}}^{(k)}\rangle]Q \\
+                        R_{k} &= \langle \mathbf{a_{hi}}^{(k)}, \mathbf{G_{lo}}^{(k)}\rangle + \langle \mathbf{b_{lo}}^{(k)}, \mathbf{H_{hi}}^{(k)}\rangle + [\langle \mathbf{a_{hi}}^{(k)}, \mathbf{b_{lo}}^{(k)}\rangle]Q
+                    \end{align*}
+                \item $\mathcal{P}$ sends $(L_k, R_k)$ to $\mathcal{V}$
+                \item $\mathcal{V}$ draws challenge $u_k \xleftarrow{R} \mathbb{F}_p$ and sends it to $\mathcal{P}$
+                \item Both $\mathcal{P}$ and $\mathcal{V}$ compute:
+                    \begin{align*}
+                        P_{k-1} &= P_k + [u_k^2] L_k + [u_k^{-2}] R_k \\
+                        \mathbf{G}^{(k-1)} &= \mathbf{G_{lo}}^{(k)} \cdot u_k^{-1} + u_k \cdot \mathbf{G_{hi}}^{(k)} \\
+                        \mathbf{H}^{(k-1)} &= \mathbf{H_{lo}}^{(k)} \cdot u_k + u_k^{-1} \cdot \mathbf{H_{hi}}^{(k)}
+                    \end{align*}
+                \item $\mathcal{P}$ computes:
+                    \begin{align*}
+                        \mathbf{a}^{(k-1)} &= \mathbf{a_{lo}}^{(k)} \cdot u_k + u_k^{-1} \cdot \mathbf{a_{hi}}^{(k)} \\
+                        \mathbf{b}^{(k-1)} &= \mathbf{b_{lo}}^{(k)} \cdot u_k^{-1} + u_k \cdot \mathbf{b_{hi}}^{(k)} \\
+                    \end{align*}
+            \end{itemize}
+        \item Prover $\mathcal{P}$ sends $(a,b) \gets (\mathbf{a}_1^{(0)}, \mathbf{b}_1^{(0)})$ to verifier $\mathcal{V}$
+        \item Verifier performs final check: 
+            $$P' + \sum_{i=1}^d ([u_i^2]L_i + [u_i^{-2}]R_i) = [a]G_1^{(0)} + [b]H_1^{(0)} + [ab]Q$$
+        outputs \textbf{accept} if equality holds and \textbf{reject} otherwise.
+    \end{itemize}
+\end{definition}
+
+\subsection{Range proofs}
+
+\subsection{Arithmetic circuits proofs}
 
 \subsection{STARK-friendly fields}
 In general, STARK protocol can work over any field $\mathbb{F}$ with high two-adicity. The primary 
