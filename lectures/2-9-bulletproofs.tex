@@ -44,41 +44,44 @@ Here we describe \textbf{inner-product compression} algorithm -- main building b
 Firstly, assuming that $n = 2^d$ define by $\mathbf{G_{lo}} = (G_1, \dots, G_{n/2}), \mathbf{G_{hi}} = (G_{n/2+1},\dots, G_n) \in \mathbb{G}^{n/2}$ -- lower and higher halves of vector $\mathbf{G}$ and $\mathbf{a_{lo}} = (a_1, \dots, a_{n/2}), \mathbf{a_{hi}} = (a_{n/2+1},\dots,a_n) \in \mathbb{F}_{n/2}$ -- lower and higher halves of $\mathbf{a} \in \mathbb{F}_p^{n}$.
 
 Let $u_k \in \mathbb{F}_p$ - be some scalar, define compressed vectors:
-\begin{align}
+\begin{align*}
     \mathbf{a}^{(k-1)} &= \mathbf{a_{lo}} \cdot u_k + u_k^{-1} \cdot \mathbf{a_{hi}} \\
     \mathbf{b}^{(k-1)} &= \mathbf{b_{lo}} \cdot u_k^{-1} + u_k \cdot \mathbf{b_{hi}} \\
     \mathbf{G}^{(k-1)} &= \mathbf{G_{lo}} \cdot u_k^{-1} + u_k \cdot \mathbf{G_{hi}} \\
     \mathbf{H}^{(k-1)} &= \mathbf{H_{lo}} \cdot u_k + u_k^{-1} \cdot \mathbf{H_{hi}}
-\end{align}
+\end{align*}
 
 Define $P_k \gets P' =  \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle + [\langle \mathbf{a,b} \rangle]Q$ and define $P_{k-1}$ using compressed vectors to have the same form as $P_k$:
 $$P_{k-1} = \langle \mathbf{a}^{(k-1)}, \mathbf{G}^{(k-1)} \rangle + \langle \mathbf{b}^{(k-1)}, \mathbf{H}^{(k-1)} \rangle + [\langle \mathbf{a}^{(k-1)}, \mathbf{b}^{(k-1)} \rangle]Q $$
 
 Subsituting compressed vectors and applying bilinearity property of inner product we get:
-\begin{align}
+\begin{align*}
     P_{k-1} = & \langle \mathbf{a_{lo}}, \mathbf{G_{lo}}\rangle + \langle \mathbf{a_{hi}}, \mathbf{G_{hi}}\rangle &+ u_k^2\langle \mathbf{a_{lo}}, \mathbf{G_{hi}}\rangle + u_k^{-2}\langle \mathbf{a_{hi}}, \mathbf{G_{lo}}\rangle + \\
     & \langle \mathbf{b_{lo}}, \mathbf{H_{lo}}\rangle + \langle \mathbf{b_{hi}}, \mathbf{H_{hi}}\rangle &+ u_k^2\langle \mathbf{b_{hi}}, \mathbf{H_{lo}}\rangle + u_k^{-2}\langle \mathbf{b_{lo}}, \mathbf{H_{hi}}\rangle + \\
     & [\langle \mathbf{a_{lo}}, \mathbf{b_{lo}}\rangle + \langle \mathbf{a_{hi}}, \mathbf{b_{hi}}\rangle]Q &+ [u_k^2\langle \mathbf{a_{lo}}, \mathbf{b_{hi}}\rangle + u_k^{-2}\langle \mathbf{a_{hi}}, \mathbf{b_{lo}}\rangle]Q
-\end{align}
+\end{align*}
 
 Note that $\langle \mathbf{a_{lo}}, \mathbf{G_{lo}}\rangle + \langle \mathbf{a_{hi}}, \mathbf{G_{hi}}\rangle = \langle \mathbf{a,G}\rangle$ so that the first two columns of $P_{k-1}$ definition precisecly contains $P_{k} = P'$:
 $$P_{k} = \langle \mathbf{a_{lo}}, \mathbf{G_{lo}}\rangle + \langle \mathbf{a_{hi}}, \mathbf{G_{hi}}\rangle + \langle \mathbf{b_{lo}}, \mathbf{H_{lo}}\rangle + \langle \mathbf{b_{hi}}, \mathbf{H_{hi}}\rangle + [\langle \mathbf{a_{lo}}, \mathbf{b_{lo}}\rangle + \langle \mathbf{a_{hi}}, \mathbf{b_{hi}}\rangle]Q$$
 
 Define cross-terms $L_k, R_k$ of $P_{k-1}$ such that:
-\begin{align}
+\begin{align*}
     P_{k-1} &= P_k + [u_k^2] L_k + [u_k^{-2}] R_k \\
     L_{k} &= \langle \mathbf{a_{lo}}, \mathbf{G_{hi}}\rangle + \langle \mathbf{b_{hi}}, \mathbf{H_{lo}}\rangle + [\langle \mathbf{a_{lo}}, \mathbf{b_{hi}}\rangle]Q \\
     R_{k} &= \langle \mathbf{a_{hi}}, \mathbf{G_{lo}}\rangle + \langle \mathbf{b_{lo}}, \mathbf{H_{hi}}\rangle + [\langle \mathbf{a_{hi}}, \mathbf{b_{lo}}\rangle]Q
-\end{align}
+\end{align*}
 
 Here we come up with some kind of statement compression algorithm reducing size of all vectors in half per compression step. Repeating comression algorithm $k$ times we end up with vectors $\mathbf{a}^{(0)}, \mathbf{b}^{(0)}, \mathbf{G}^{(0)}, \mathbf{H}^{(0)}$ each of length one and $P_0$ containing all accumulated cross-terms:
-\begin{align}
+\begin{align*}
     P_0 &= [a_1^{(0)}]G_1^{(0)} + [b_1^{(0)}]H_1^{(0)} + [a_1^{(0)}b_1^{(0)}]Q \\
     P_0 &= P_k + \sum_{i=1}^d ([u_i^2]L_i + [u_i^{-2}]R_i)
-\end{align}
+\end{align*}
 
 Recalling that $P_k = P'$, the final compressed statement asserting inner-product value will have the following form:
-$$P' + \sum_{i=1}^d ([u_i^2]L_i + [u_i^{-2}]R_i) = [a_1^{(0)}]G_1^{(0)} + [b_1^{(0)}]H_1^{(0)} + [a_1^{(0)}b_1^{(0)}]Q$$
+\begin{equation}
+    P' + \sum_{i=1}^d ([u_i^2]L_i + [u_i^{-2}]R_i) = [a_1^{(0)}]G_1^{(0)} + [b_1^{(0)}]H_1^{(0)} + [a_1^{(0)}b_1^{(0)}]Q
+    \label{eq:ip-final-compressed}
+\end{equation}
 
 \subsubsection{Proving $\mathcal{R}'_{ip}$}
 
@@ -191,7 +194,23 @@ Let's describe the \textbf{inner-product} protocol $\Pi'_{ip}$ for relation $\ma
     \label{fig:interactive_ip}
 \end{figure}
 
+As we can see, overall communication complexity of $\Pi_{ip}$ is $2\log_2 n \mathbb{G} + 2 \mathbb{F}_p$ so we come up with logarithmic proof size for our inner-product relation $\mathcal{R}_{ip}$. Now one might ask whether $\Pi_{ip}$ has any desired properties such as completeness, soundness and zero-knowledge. It appears that the first two holds under some generalizations needed for security proofs but not zero-knowledge (indeed, if $n=1$ then $\mathcal{P}$ sends witness pair $a,b$ directly).
 
+\begin{theorem}[Inner-Product Argument]
+    The argument system $\Pi_{ip}$ for relation $\mathcal{R}_{ip}$ has \textit{perfect completeness and statistical witness-extended emulation} for either extracting a non-trivial discrete logarithm relation between $\mathbf{G,H}, Q$ or extracting valid witness $\mathbf{a,b}$.
+\end{theorem}
+
+\textbf{Proof idea}. \textit{Perfect completeness} of $Pi_{ip}$ follows because $Pi_{ip}$ converts instance of $\mathcal{R}_{ip}$ to instance of $\mathcal{P}'_{ip}$ and $\Pi'_{ip}$ is trivially complete by construction due to \Cref{eq:ip-final-compressed}. Notation \textit{statistical witness-extended emulation} generalizes special soundness in the way applicable for multi-stage complex argument systems where each step of the protocol could be rewinded to extract part of the witness so that more accurate definition of protocol security is achieved despite \textit{special soundness} implies building the whole knowledge extractor which might has non-polynomial running time for multi-stage protocols.
+
+Here we briefly describe a knowledge extractor $\mathcal{E}$ for a witness $(\mathbf{a}^{(k)}, \mathbf{b}^{(k)})$ or non-trivial discrete logarithm relation for $(\mathbf{G, H}, Q)$ for one stage of protocol. 
+\begin{enumerate}
+    \item $\mathcal{E}$ runs $\mathcal{P}$ to the last stage to obtain $(L, R) \gets (L_1, R_1)$
+    \item $\mathcal{E}$ rewinds the $\Pi'_{ip}$ last stage four times to obtain four challenges $x_1, x_2, x_3, x_4$, so that the following equations holds from expressing $P_{1}$:
+    \begin{align}
+        [x_1^2] L_k + P_k + [x_1^{-2}] R_k = \langle \mathbf{a}^{(k-1)}, \mathbf{G}^{(k-1)} \rangle + \langle \mathbf{b}^{(k-1)}, \mathbf{H}^{(k-1)} \rangle + [\langle \mathbf{a}^{(k-1)}, \mathbf{b}^{(k-1)} \rangle]Q
+    \end{align}
+    \item 
+\end{enumerate}
 \subsection{Range proofs}
 
 \subsection{Arithmetic circuits proofs}
