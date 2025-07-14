@@ -1,4 +1,5 @@
 \documentclass[../lecture-notes-148x210.tex]{subfiles}
+\usepackage{systeme}
 
 \begin{document}
 \subsection{Introduction}
@@ -204,12 +205,16 @@ As we can see, overall communication complexity of $\Pi_{ip}$ is $2\log_2 n \mat
 
 Here we briefly describe a knowledge extractor $\mathcal{E}$ for a witness $(\mathbf{a}^{(k)}, \mathbf{b}^{(k)})$ or non-trivial discrete logarithm relation for $(\mathbf{G, H}, Q)$ for one stage of protocol. 
 \begin{enumerate}
-    \item $\mathcal{E}$ runs $\mathcal{P}$ to the last stage to obtain $(L, R) \gets (L_1, R_1)$
-    \item $\mathcal{E}$ rewinds the $\Pi'_{ip}$ last stage four times to obtain four challenges $x_1, x_2, x_3, x_4$, so that the following equations holds from expressing $P_{1}$:
+    \item $\mathcal{E}$ runs $\mathcal{P}$ to the last stage to obtain $(L, R) \gets (L_1, R_1)$. and $(a,b) \gets $
+    \item $\mathcal{E}$ rewinds the $\Pi'_{ip}$ final stage four times to obtain four challenges $x_1, x_2, x_3, x_4$ and responses $(\mathbf{a}_1^{(0)}, \mathbf{b}_1^{(0)}), (\mathbf{a}_2^{(0)}, \mathbf{b}_2^{(0)}), (\mathbf{a}_3^{(0)}, \mathbf{b}_3^{(0)}), (\mathbf{a}_4^{(0)}, \mathbf{b}_4^{(0)})$ so that the following equation holds for $i \in \{ 1,2,3,4 \}$:
     \begin{align}
-        [x_1^2] L_k + P_k + [x_1^{-2}] R_k = \langle \mathbf{a}^{(k-1)}, \mathbf{G}^{(k-1)} \rangle + \langle \mathbf{b}^{(k-1)}, \mathbf{H}^{(k-1)} \rangle + [\langle \mathbf{a}^{(k-1)}, \mathbf{b}^{(k-1)} \rangle]Q
+        [x_i^2] L_1 + P_1 + [x_i^{-2}] R_1 = \langle \mathbf{a}_i^{(0)}, \mathbf{G}^{(0)} \rangle + \langle \mathbf{b}_i^{(0)}, \mathbf{H}^{(0)} \rangle + [\langle \mathbf{a}_i^{(0)}, \mathbf{b}_i^{(0)} \rangle]Q
     \end{align}
-    \item 
+    \item $\mathcal{E}$ choses $(v_1, v_2, v_3) \in \mathbb{F}_p^3 $ as a solution for the system of linear equations:
+        $$\systeme{x_1^2 v_1 + x_2^2 v_2 + x_3^2 v_3=0, v_1+v_2+v_3=1, x_1^{-2} v_1 + x_2^{-2} v_2 + x_3^{-2} v_3=0}$$
+        \label{eq:extractor_eq}
+    \item $\mathcal{E}$ takes linear combination of \ref{eq:extractor_eq} with coefficients $v_i$ for $i \in \{ 1,2,3 \}$:
+        $$
 \end{enumerate}
 \subsection{Range proofs}
 
