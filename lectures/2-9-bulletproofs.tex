@@ -4,17 +4,70 @@
 \begin{document}
 \subsection{Introduction}
 
-\textbf{Bulletproofs} is a non-interactive zero-knowledge proof protocol with logarithmically sized proofs without a trusted setup. Originally, \textbf{bulletproofs} was developed to provide efficient inner-product proofs for range proofs in application to confidential transactions, but it applies to arbitrary arithmetic circuit (possibly encoded in R1CS). Technically, the protocol is built in an interactive fashion (like $\Sigma$-protocols) and made non-interactive with a Fiat-Shamir transform. One key feature that differs it from $\Sigma$-protocols is the number of challenges from a verifier $\mathcal{V}$: in $\Sigma$-protocols there is only one challenge, while \textbf{bulletproofs} implies a logarithmic in circuit size number of queries. The main advantages of \textbf{bulletproofs} are an absence of a trusted setup, security that relies on the \textit{discrete-logarithm} assumption without any other auxiliary structures like bilinear pairings, however, the main disadvantage of \textbf{bulletproofs} is linear in circuit size verification time though still efiicient for small circuits.
+\textbf{Bulletproofs} is a non-interactive zero-knowledge proof protocol with logarithmically sized proofs without a trusted setup. Originally, \textbf{bulletproofs} was developed to provide efficient inner-product proofs for range proofs in application to confidential transactions, but it applies to arbitrary arithmetic circuit (possibly encoded in R1CS). Technically, the protocol is built in an interactive fashion (like $\Sigma$-protocols) and made non-interactive with a Fiat-Shamir transform. One key feature that differs it from $\Sigma$-protocols is the number of challenges from a verifier $\mathcal{V}$: in $\Sigma$-protocols there is only one challenge, while \textbf{bulletproofs} implies a logarithmic in circuit size number of queries. The main advantages of \textbf{bulletproofs} are an absence of a trusted setup, security that relies on the \textit{discrete-logarithm} assumption without any other auxiliary structures like bilinear pairings, however, the main disadvantage of \textbf{bulletproofs} is linear in circuit size verification time though still efficient for small circuits.
 
 Hence, we will describe some preliminaries.
+\subsection{Notation}
+Let $\mathbb{G}$ - cyclic group of prime order $p$ written additively, $\mathbf{G} = (G_1, \dots, G_n), \mathbf{H} = (H_1, \dots, H_n) \in \mathbb{G}^n$ - vectors of independent generators. We denote by $\langle \mathbf{a,b} \rangle$ - inner product of vectors $\mathbf{a} = (a_1, \dots, a_n), \mathbf{b} = (b_1, \dots, b_n) \in \mathbb{F}_p^n$ and $\langle \mathbf{a,G} \rangle = \sum_{i=1}^n [a_i] G_i \in \mathbb{G}$ - inner product of vector $\mathbf{a}$ with vector of generators $\mathbf{G}$.
 
-\subsection{Proving non-linear relations with $\Sigma$-protocols}
+\subsection{Zero-knowledge multiplication}
+Let $a,b,c \in \mathbb{F}_p$. Here we build a zero-knowledge protocol for relation $\mathcal{R}'_{mul} = \{ c; a,b: c=ab \}$. We use well-known $\Sigma$-protocol framework for that, but firstly we make very useful generalization that could allow us to prove much larger class of relations.
+
+Consider the first-degree polynomials $l(x) = a + s_L x, r(x) = b + s_R x \in \mathbb{F}_p[x]$. Let $t(x) = l(x)r(x)$ and relation 
+$$\mathcal{R}_{mul} = \{ (;l(x),r(x),t(x))\in (\emptyset \times \mathbb{F}_p^3) \vert t(x) = l(x)r(x)\}$$
+Firstly, observe that proving $t(x) = l(x)r(x)$ may be reduced to evaluation check at some challenge point $u \in \mathbb{F}_p$: $t(u) = l(u)r(u)$, due to the \textit{Schwartz-Zippel lemma}: 
+$$\mathsf{Pr}[l(u)r(u) = t(u) \vert l(x)r(x) \neq t(x)] \le \frac{max(\deg(l(x)r(x)), \deg(t(x)))}{p} = \frac{2}{p}$$
+is typycally negligible function from security level which makes this check \textit{sound}.
+
+Let's describe naїve unoptimized version \textbf{polynomial multiplication} protocol $\Pi'_{mul} = (\mathsf{Setup},\mathcal{P,V})$ for relation $\mathcal{R}_{mul}$. 
+During $\mathsf{Setup}$ parties agree on group elements $G,B \in \mathbb{G}$. After that parties involve in the following protocol:
+\begin{itemize}
+    \item Prover $\mathcal{P}$ computes:
+        $$t(x) = l(x)r(x) = (a+s_L x)(a+s_R x) = ab + (as_R + bs_L) + s_L s_R x^2$$
+    \item Prover $\mathcal{P}$ draws blinding factors $\alpha_0, \alpha_1, \beta_0, \beta_1, \tau_0, \tau_1, \tau_2 \xleftarrow{R} \mathbb{F}_p$ forming blinding polynomials 
+    $$\alpha(x) = \alpha_0 + \alpha_1 x, \beta(x) = \beta_0 + \beta_1 x, \tau(x) = \tau_0 + \tau_1 x + \tau_2 x^2$$
+    and sends to $\mathcal{V}$ Pedersen commitments for each coefficient of $l(x), r(x), t(x)$:
+        \begin{equation}
+            \begin{aligned}
+                L_0 &= [a]G + [\alpha_0]B \\
+                L_1 &= [s_L]G + [\alpha_1]B \\
+                &\\
+                R_0 &= [b]G + [\beta_0]B \\
+                R_1 &= [s_R]G + [\beta_1]B \\
+                &\\
+                T_0 &= [ab]G + [\tau_0]B \\
+                T_1 &= [as_R + bs_L]G + [\tau_1]B \\
+                T_2 &= [s_L s_R]G + [\tau_2]B
+            \end{aligned}
+        \end{equation}
+    \item Verifier $\mathcal{V}$ samples and sends to $\mathcal{P}$ random evaluation point $u \xleftarrow{R} \mathbb{F}_p$
+    \item Prover $\mathcal{P}$ evaluates $l(x),r(x),t(x)$ and $\alpha(x), \beta(x), \tau(x)$ at $u$:
+        \begin{equation}
+            \begin{aligned}
+                l_u & = a + s_L u\\
+                r_u &= b + s_R u\\
+                t_u &= l_u r_u\\
+                \alpha_u &= \alpha_0 + \alpha_1 u\\
+                \beta_u &= \beta_0 + \beta_1 u\\
+                \tau_u &= \tau_0 + \tau_1 u + \tau_2 u^2
+            \end{aligned}
+        \end{equation}
+        and sends $(l_u, r_u, t_u, \alpha_u, \beta_u, \tau_u)$ to $\mathcal{V}$.
+    \item Verifier $\mathcal{V}$ performs checks: 
+        \begin{equation}
+            \begin{aligned}
+                [l_u]G + [\alpha_u]B &\stackrel{\text{?}}{=} L_0 + [u]L_1 \\
+                [r_u]G + [\beta_u]B &\stackrel{\text{?}}{=} R_0 + [u]R_1 \\
+                [t_u]G + [\tau_u]B &\stackrel{\text{?}}{=} T_0 + [u]T_1 + [u^2]T_2 \\
+                t_u &\stackrel{\text{?}}{=} l_u r_u
+            \end{aligned}
+        \end{equation}
+\end{itemize}
+
 
 \subsection{Inner-product argument}
 
-Firstly, we describe the protocol for the \textbf{inner-product argument} - core component of the \textbf{bulletproofs} protocol. After that we will apply it to range proofs and arithmetic circuits. We have already seen that inner-products are the main ingridients for R1CS language because any R1CS relation could be seen as a batch of inner-products though it's not the most efficient representation and we'll see how to amortize all the constraints into inner-products more efficiently.
-
-Let $\mathbb{G}$ - cyclic group of prime order $p$ written additively, $\mathbf{G} = (G_1, \dots, G_n), \mathbf{H} = (H_1, \dots, H_n) \in \mathbb{G}^n$ - vectors of independent generators. We denote by $\langle \mathbf{a,b} \rangle$ - inner product of vectors $\mathbf{a} = (a_1, \dots, a_n), \mathbf{b} = (b_1, \dots, b_n) \in \mathbb{F}_p^n$ and $\langle \mathbf{a,G} \rangle = \sum_{i=1}^n [a_i] G_i \in \mathbb{G}$ - inner product of vector $\mathbf{a}$ with vector of generators $\mathbf{G}$.
+Here we describe the further generalization of $\Pi_{mul}$ -- protocol for the \textbf{inner-product argument} - core component of the \textbf{bulletproofs} protocol. After that we will apply it to range proofs and arithmetic circuits. We have already seen that inner-products are the main ingridients for R1CS language because any R1CS relation could be seen as a batch of inner-products though it's not the most efficient representation and we'll see how to amortize all the constraints into inner-products more efficiently.
 
 The \textbf{inner-product argument} allows to prove that two vectors $\mathbf{a,b} \in \mathbb{F}_p^n$ satisfy the relation:
 $$\mathcal{R}_{ip} = \{ (\mathbf{G,H}, P, c; \mathbf{a,b}) \vert P = \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle \wedge \langle \mathbf{a,b} \rangle = c \}$$
@@ -52,8 +105,19 @@ Let $u_k \in \mathbb{F}_p$ - be some scalar, define compressed vectors:
     \mathbf{H}^{(k-1)} &= \mathbf{H_{lo}} \cdot u_k + u_k^{-1} \cdot \mathbf{H_{hi}}
 \end{align*}
 
-Define $P_k \gets P' =  \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle + [\langle \mathbf{a,b} \rangle]Q$ and define $P_{k-1}$ using compressed vectors to have the same form as $P_k$:
-$$P_{k-1} = \langle \mathbf{a}^{(k-1)}, \mathbf{G}^{(k-1)} \rangle + \langle \mathbf{b}^{(k-1)}, \mathbf{H}^{(k-1)} \rangle + [\langle \mathbf{a}^{(k-1)}, \mathbf{b}^{(k-1)} \rangle]Q $$
+Define $P_k \gets P' =  \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle + [\langle \mathbf{a,b} \rangle]Q$ and define $P_{k-1}$ using compressed vectors to have the same form as $P_k$, but in new basis $(\mathbf{G}^{(k-1)}, \mathbf{H}^{(k-1)})$:
+
+\begin{equation}
+    P_{k-1} = \langle \mathbf{a}^{(k-1)}, \mathbf{G}^{(k-1)} \rangle + \langle \mathbf{b}^{(k-1)}, \mathbf{H}^{(k-1)} \rangle + [\langle \mathbf{a}^{(k-1)}, \mathbf{b}^{(k-1)} \rangle]Q
+    \label{eq:p_k_1_from_new_basis}
+\end{equation}
+
+Or alternatively, expressing $P_{k-1}$ in old basis $(\mathbf{G}^{(k)}, \mathbf{H}^{(k)})$ we get:
+\begin{align}
+    P_{k-1} &= \langle u_k^{-1} \cdot \mathbf{a}^{(k-1)}, \mathbf{G_{lo}}^{(k)} \rangle + \langle u_k \cdot \mathbf{a}^{(k-1)}, \mathbf{G_{hi}}^{(k)} \rangle + \langle u_k \cdot \mathbf{b}^{(k-1)}, \mathbf{H_{lo}}^{(k)} \rangle \\
+    &+ \langle u_k^{-1} \cdot \mathbf{b}^{(k-1)}, \mathbf{H_{hi}}^{(k)} \rangle + [\langle \mathbf{a}^{(k-1)}, \mathbf{b}^{(k-1)} \rangle]Q
+    \label{eq:p_k_1_from_old_basis}
+\end{align}
 
 Subsituting compressed vectors and applying bilinearity property of inner product we get:
 \begin{align*}
@@ -90,8 +154,8 @@ Let's describe the \textbf{inner-product} protocol $\Pi'_{ip}$ for relation $\ma
 \begin{definition}
     The \textbf{inner-product} protocol $\Pi'_{ip} = (\mathcal{P}, \mathcal{V})$ for relation $\mathcal{R}'_{ip} = \{ (\mathbf{G,H}, Q, P'; \mathbf{a,b}) \vert P' = \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle + [\langle \mathbf{a,b} \rangle]Q \}$, where all vectors have length $n=2^d$ with prover $\mathcal{P}$, verifier $\mathcal{V}$ is defined as follows:
     \begin{itemize}
-        \item Prover $\mathcal{P}$ sets $$(k, \mathbf{a}^{(k)}, \mathbf{b}^{(k)}, \mathbf{G}^{(k)}, \mathbf{H}^{(k)}, P_k) \gets (n, \mathbf{a,b,G,H},P')$$
-        \item Verifier $\mathcal{V}$ sets $$(k, \mathbf{G}^{(k)}, \mathbf{H}^{(k)}, P_k) \gets (n, \mathbf{G,H},P')$$
+        \item Prover $\mathcal{P}$ sets $$(k, \mathbf{a}^{(k)}, \mathbf{b}^{(k)}, \mathbf{G}^{(k)}, \mathbf{H}^{(k)}, P_k) \gets (d, \mathbf{a,b,G,H},P')$$
+        \item Verifier $\mathcal{V}$ sets $$(k, \mathbf{G}^{(k)}, \mathbf{H}^{(k)}, P_k) \gets (d, \mathbf{G,H},P')$$
         \item While $k > 0$ then:
             \begin{itemize}
                 \item Prover $\mathcal{P}$ computes 
@@ -195,27 +259,92 @@ Let's describe the \textbf{inner-product} protocol $\Pi'_{ip}$ for relation $\ma
     \label{fig:interactive_ip}
 \end{figure}
 
-As we can see, overall communication complexity of $\Pi_{ip}$ is $2\log_2 n \mathbb{G} + 2 \mathbb{F}_p$ so we come up with logarithmic proof size for our inner-product relation $\mathcal{R}_{ip}$. Now one might ask whether $\Pi_{ip}$ has any desired properties such as completeness, soundness and zero-knowledge. It appears that the first two holds under some generalizations needed for security proofs but not zero-knowledge (indeed, if $n=1$ then $\mathcal{P}$ sends witness pair $a,b$ directly).
+As we can see, overall communication complexity of $\Pi_{ip}$ is $2\log_2 n \mathbb{G} + 2 \mathbb{F}_p$ so we come up with logarithmic proof size for our inner-product relation $\mathcal{R}_{ip}$. Now one might ask whether $\Pi_{ip}$ has any desired properties such as completeness, soundness and zero-knowledge. It appears that the first two holds under some generalizations needed for security proofs but not \textit{zero-knowledge} (indeed, if $n=1$ then $\mathcal{P}$ sends witness pair $a,b$ directly). We'll make further applications of \textit{inner-product argument} for range checks or arithmetic circuits \textit{zero-knowledge}.
 
 \begin{theorem}[Inner-Product Argument]
     The argument system $\Pi_{ip}$ for relation $\mathcal{R}_{ip}$ has \textit{perfect completeness and statistical witness-extended emulation} for either extracting a non-trivial discrete logarithm relation between $\mathbf{G,H}, Q$ or extracting valid witness $\mathbf{a,b}$.
 \end{theorem}
 
-\textbf{Proof idea}. \textit{Perfect completeness} of $Pi_{ip}$ follows because $Pi_{ip}$ converts instance of $\mathcal{R}_{ip}$ to instance of $\mathcal{P}'_{ip}$ and $\Pi'_{ip}$ is trivially complete by construction due to \Cref{eq:ip-final-compressed}. Notation \textit{statistical witness-extended emulation} generalizes special soundness in the way applicable for multi-stage complex argument systems where each step of the protocol could be rewinded to extract part of the witness so that more accurate definition of protocol security is achieved despite \textit{special soundness} implies building the whole knowledge extractor which might has non-polynomial running time for multi-stage protocols.
+\textbf{Proof idea}. \textit{Perfect completeness} of $Pi_{ip}$ follows because $Pi_{ip}$ converts instance of $\mathcal{R}_{ip}$ to instance of $\mathcal{P}'_{ip}$ and $\Pi'_{ip}$ is trivially complete by construction due to \Cref{eq:ip-final-compressed}. Notation \textit{statistical witness-extended emulation} generalizes \textit{special soundness} in the way applicable for multi-stage complex argument systems where each step of the protocol could be rewinded to extract part of the witness so that more accurate definition of protocol security is achieved despite \textit{special soundness} implies building the whole knowledge extractor which might has non-polynomial running time for multi-stage protocols.
 
-Here we briefly describe a knowledge extractor $\mathcal{E}$ for a witness $(\mathbf{a}^{(k)}, \mathbf{b}^{(k)})$ or non-trivial discrete logarithm relation for $(\mathbf{G, H}, Q)$ for one stage of protocol. 
+Here we briefly describe a knowledge extractor $\mathcal{E}'_{ip}$ for a witness $(\mathbf{a}, \mathbf{b})$ or non-trivial discrete logarithm relation for $(\mathbf{G, H}, Q)$ for $\Pi'_{ip}$. 
 \begin{enumerate}
-    \item $\mathcal{E}$ runs $\mathcal{P}$ to the last stage to obtain $(L, R) \gets (L_1, R_1)$. and $(a,b) \gets $
-    \item $\mathcal{E}$ rewinds the $\Pi'_{ip}$ final stage four times to obtain four challenges $x_1, x_2, x_3, x_4$ and responses $(\mathbf{a}_1^{(0)}, \mathbf{b}_1^{(0)}), (\mathbf{a}_2^{(0)}, \mathbf{b}_2^{(0)}), (\mathbf{a}_3^{(0)}, \mathbf{b}_3^{(0)}), (\mathbf{a}_4^{(0)}, \mathbf{b}_4^{(0)})$ so that the following equation holds for $i \in \{ 1,2,3,4 \}$:
-    \begin{align}
-        [x_i^2] L_1 + P_1 + [x_i^{-2}] R_1 = \langle \mathbf{a}_i^{(0)}, \mathbf{G}^{(0)} \rangle + \langle \mathbf{b}_i^{(0)}, \mathbf{H}^{(0)} \rangle + [\langle \mathbf{a}_i^{(0)}, \mathbf{b}_i^{(0)} \rangle]Q
-    \end{align}
-    \item $\mathcal{E}$ choses $(v_1, v_2, v_3) \in \mathbb{F}_p^3 $ as a solution for the system of linear equations:
-        $$\systeme{x_1^2 v_1 + x_2^2 v_2 + x_3^2 v_3=0, v_1+v_2+v_3=1, x_1^{-2} v_1 + x_2^{-2} v_2 + x_3^{-2} v_3=0}$$
+    \item $\mathcal{E}'_{ip}$ runs $\mathcal{P}$ to the last stage to obtain $(L, R) \gets (L_1, R_1)$.
+    \item $\mathcal{E}'_{ip}$ rewinds the $\Pi'_{ip}$ final stage four times to obtain four challenges $x_1, x_2, x_3, x_4$ and responses $(\mathbf{a}_1^{(0)}, \mathbf{b}_1^{(0)}), (\mathbf{a}_2^{(0)}, \mathbf{b}_2^{(0)}), (\mathbf{a}_3^{(0)}, \mathbf{b}_3^{(0)}), (\mathbf{a}_4^{(0)}, \mathbf{b}_4^{(0)})$ so that the following equation holds for $i \in \{ 1,2,3,4 \}$ (\ref{eq:p_k_1_from_old_basis}):
+    \begin{equation}
+        \begin{aligned}
+            & [x_i^2]L + P_1 + [x_i^{-2}]R = \langle x_i^{-1} \cdot \mathbf{a}_i^{(0)}, \mathbf{G_{lo}}^{(1)} \rangle + \langle x_i \cdot \mathbf{a}_i^{(0)}, \mathbf{G_{hi}}^{(1)} \rangle \\
+            &+ \langle x_i \cdot \mathbf{b}_i^{(0)}, \mathbf{H_{lo}}^{(1)} \rangle + \langle x_i^{-1} \cdot \mathbf{b}_i^{(0)}, \mathbf{H_{hi}}^{(1)} \rangle + [\langle \mathbf{a}_i^{(0)}, \mathbf{b}_i^{(0)} \rangle]Q
+        \end{aligned}
         \label{eq:extractor_eq}
-    \item $\mathcal{E}$ takes linear combination of \ref{eq:extractor_eq} with coefficients $v_i$ for $i \in \{ 1,2,3 \}$:
-        $$
+    \end{equation}
+
+    \item $\mathcal{E}'_{ip}$ choses $(v_1, v_2, v_3) \in \mathbb{F}_p^3 $ as a solution for the system of linear equations:
+        \begin{equation}
+            \begin{cases}
+                x_1^2 v_1 + x_2^2 v_2 + x_3^2 v_3 = 0 \\
+                v_1 + v_2 + v_3 = 1 \\
+                x_1^{-2} v_1 + x_2^{-2} v_2 + x_3^{-2} v_3 = 0
+            \end{cases}
+            \label{eq:extractor_v}
+        \end{equation}
+    \item $\mathcal{E}'_{ip}$ takes linear combination of (\ref{eq:extractor_eq}) with coefficients $v_i$ for $i \in \{ 1,2,3 \}$:
+        \begin{equation*}
+            \begin{aligned}
+                & \sum_{i=1}^3 [v_i x_i^2]L + [v_i]P_1 + [v_i x_i^{-2}]R = \sum_{i=1}^3 \langle v_i x_i^{-1} \cdot \mathbf{a}_i^{(0)}, \mathbf{G_{lo}}^{(1)} \rangle + \langle v_i x_i \cdot \mathbf{a}_i^{(0)}, \mathbf{G_{hi}}^{(1)} \rangle \\
+                &+ \langle v_i x_i \cdot \mathbf{b}_i^{(0)}, \mathbf{H_{lo}}^{(1)} \rangle + \langle v_i x_i^{-1} \cdot \mathbf{b}_i^{(0)}, \mathbf{H_{hi}}^{(1)} \rangle + [v_i \langle \mathbf{a}_i^{(0)}, \mathbf{b}_i^{(0)} \rangle]Q
+            \end{aligned}
+        \end{equation*}
+        Simplifying equation above we get:
+        \begin{equation}
+            \begin{aligned}
+                & P_1 = \langle \sum_{i=1}^3 v_i x_i^{-1} \cdot \mathbf{a}_i^{(0)} + v_i x_i \cdot \mathbf{a}_i^{(0)}, \mathbf{G}^{(1)} \rangle +\\ 
+                & \langle \sum_{i=1}^3 v_i x_i \cdot \mathbf{b}_i^{(0)} + v_i x_i^{-1} \cdot \mathbf{b}_i^{(0)}, \mathbf{H}^{(1)} \rangle + [\sum_{i=1}^3 v_i \langle \mathbf{a}_i^{(0)}, \mathbf{b}_i^{(0)} \rangle]Q
+            \end{aligned}
+            \label{eq:extractor_p1}
+        \end{equation}
+        On the other hand we have an expression for $P_1$ from (\ref{eq:p_k_1_from_new_basis}):
+        \begin{equation}
+            P_{1} = \langle \mathbf{a}^{(1)}, \mathbf{G}^{(1)} \rangle + \langle \mathbf{b}^{(1)}, \mathbf{H}^{(1)} \rangle + [\langle \mathbf{a}^{(1)}, \mathbf{b}^{(1)} \rangle]Q
+            \label{eq:extractor_p1_alt}
+        \end{equation}
+    \item Asserting equality (\ref{eq:extractor_p1})$=$(\ref{eq:extractor_p1_alt}) the extractor $\mathcal{E}'_{ip}$ sets: 
+        \begin{align}
+            \mathbf{a}^{(1)} &= \sum_{i=1}^3 v_i x_i^{-1} \cdot \mathbf{a}_i^{(0)} + v_i x_i \cdot \mathbf{a}_i^{(0)} \\
+            \mathbf{b}^{(1)} &= \sum_{i=1}^3 v_i x_i \cdot \mathbf{b}_i^{(0)} + v_i x_i^{-1} \cdot \mathbf{b}_i^{(0)}
+        \end{align}    
+    
+        We need the fourth rewinding to assert equality of inner product: 
+        $$\langle \mathbf{a}^{(1)}, \mathbf{b}^{(1)} \rangle = \sum_{i=1}^3 v_i \langle \mathbf{a}_i^{(0)}, \mathbf{b}_i^{(0)} \rangle$$
+        We won't describe it fully since it takes some unwiedly technical details and refer a reder to the original \textit{bulletproofs} paper, where the full proof of extraction is described in Theorem 1.
+    \item The extractor $\mathcal{E}'_{ip}$ recursively extracts $\mathbf{a}^{(k+1)}, \mathbf{b}^{(k+1)}$ from $ \mathbf{a}^{(k)}, \mathbf{b}^{(k)}$ using the method described in steps 2-5 until it reaches the final witness $\mathbf{a}^{(d)}, \mathbf{b}^{(d)} = \mathbf{a}, \mathbf{b}$ for which holds relation $\mathcal{R}'_{ip}$: 
+    $$P' =  \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle + [\langle \mathbf{a,b} \rangle]Q$$
 \end{enumerate}
+Building the extractor $\mathcal{E}_{ip}$ for $\Pi_{ip}$ is quite simple relatively to what we've done by now:
+\begin{enumerate}
+    \item $\mathcal{E}_{ip}$ runs $\Pi_{ip}$ to the end and applies the extractor $\mathcal{E}'_{ip}$ for $Pi'_{ip}$ to extract the witness $\mathbf{a,b}$ such that the following holds for $\mathcal{V}$'s challenge $r_1 \in \mathbb{F}_p$: 
+        \begin{equation}
+            P + [r_1c]B = \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle + [r_1 \cdot \langle \mathbf{a,b} \rangle]B
+            \label{eq:extractor_r1}
+        \end{equation}
+    \item $\mathcal{E}_{ip}$ rewinds the prover $\mathcal{P}$ to obtain another challenge from $\mathcal{V}$: $r_2 \in \mathbb{F}_p$ and yield another witness $\mathbf{a',b'}$ from $\mathcal{E}'_{ip}$:
+        \begin{equation}
+            P + [r_2c]B = \langle \mathbf{a',G} \rangle + \langle \mathbf{b',H} \rangle + [r_2 \cdot \langle \mathbf{a',b'} \rangle]B
+            \label{eq:extractor_r2}
+        \end{equation}
+        
+    \item $\mathcal{E}_{ip}$ substitute (\ref{eq:extractor_r1}) from (\ref{eq:extractor_r2}) to get:
+        \begin{equation}
+            [c(r_1 - r_2)]B = \langle \mathbf{a-a',G} \rangle + \langle \mathbf{b-b',H} \rangle + [r_1 \cdot \langle \mathbf{a,b} \rangle - r_2 \cdot \langle \mathbf{a',b'} \rangle]B
+        \end{equation}
+        Unless $a = a'$ and $b = b'$ we get a non-trivial discrete log relation between $\mathbf{G,H}$ and $B$, otherwise if equality of witnesses holds we get:
+        \begin{equation}
+            [(r_1 - r_2)c]B = [(r_1 - r_2) \langle \mathbf{a,b} \rangle]B
+        \end{equation}
+        Hence $c = \langle \mathbf{a,b} \rangle$.
+\end{enumerate}
+
+To formally finalize a proof of \textit{witness-extended emulation} we also need to apply so-called \textit{the forking lemma}, we again refer a reader to the original \textit{bulletproofs} paper $\quad \square$.
 \subsection{Range proofs}
 
 \subsection{Arithmetic circuits proofs}
