@@ -4,14 +4,17 @@
 \begin{document}
 \subsection{Introduction}
 
-\textbf{Bulletproofs} is a non-interactive zero-knowledge proof protocol with logarithmically sized proofs without a trusted setup. Originally, \textbf{bulletproofs} was developed to provide efficient inner-product proofs for range proofs in application to confidential transactions, but it applies to arbitrary arithmetic circuit (possibly encoded in R1CS). Technically, the protocol is built in an interactive fashion (like $\Sigma$-protocols) and made non-interactive with a Fiat-Shamir transform. One key feature that differs it from $\Sigma$-protocols is the number of challenges from a verifier $\mathcal{V}$: in $\Sigma$-protocols there is only one challenge, while \textbf{bulletproofs} implies a logarithmic in circuit size number of queries. The main advantages of \textbf{bulletproofs} are an absence of a trusted setup, security that relies on the \textit{discrete-logarithm} assumption without any other auxiliary structures like bilinear pairings, however, the main disadvantage of \textbf{bulletproofs} is linear in circuit size verification time though still efficient for small circuits.
+\textbf{Bulletproofs} is a zero-knowledge proof protocol with logarithmically sized proofs without a trusted setup. Originally, \textbf{bulletproofs} was developed to provide efficient range proofs in application to confidential transactions, but it applies also to arbitrary arithmetic circuit (possibly encoded in R1CS). In the heart of protocol lays \textbf{inner-product argument} which we describe in details. Technically, the protocol is built in an interactive fashion (like $\Sigma$-protocols), but one could make it non-interactive with a Fiat-Shamir transform. One key feature that differs it from $\Sigma$-protocols is the number of challenges from a verifier $\mathcal{V}$ -- in $\Sigma$-protocols there is only one challenge, while \textbf{bulletproofs} implies a logarithmic in circuit size number of queries. 
 
-Hence, we will describe some preliminaries.
+Also, \textbf{bulletproofs}' \textbf{inner-product argument} could be used to build various polynomial commitment schemes -- crucial building block of proving systems built with \textit{IOP} framework (\textit{Halo, Nova, etc}).
+
+The main advantages of \textbf{bulletproofs} are an absence of a trusted setup, security that relies on the \textit{discrete-logarithm} assumption without any other auxiliary structures like bilinear pairings, quite fast prover for small circuits. However, the main disadvantage of \textbf{bulletproofs} is linear in circuit size verification time though still efficient for small circuits.
+
 \subsection{Notation}
-Let $\mathbb{G}$ - cyclic group of prime order $p$ written additively, $\mathbf{G} = (G_1, \dots, G_n), \mathbf{H} = (H_1, \dots, H_n) \in \mathbb{G}^n$ - vectors of independent generators. We denote by $\langle \mathbf{a,b} \rangle$ - inner product of vectors $\mathbf{a} = (a_1, \dots, a_n), \mathbf{b} = (b_1, \dots, b_n) \in \mathbb{F}_p^n$ and $\langle \mathbf{a,G} \rangle = \sum_{i=1}^n [a_i] G_i \in \mathbb{G}$ - inner product of vector $\mathbf{a}$ with vector of generators $\mathbf{G}$.
+Let $\mathbb{G}$ - cyclic group of prime order $p$ written additively, $\mathbf{G} = (G_1, \dots, G_n), \mathbf{H} = (H_1, \dots, H_n) \in \mathbb{G}^n$ - vectors of independent generators. We denote by $\langle \mathbf{a,b} \rangle$ - inner product of vectors $\mathbf{a} = (a_1, \dots, a_n), \mathbf{b} = (b_1, \dots, b_n) \in \mathbb{F}_p^n$ and $\langle \mathbf{a,G} \rangle = \sum_{i=1}^n [a_i] G_i \in \mathbb{G}$ - inner product of vector $\mathbf{a}$ with vector of generators $\mathbf{G}$. Denote by $\mathbf{k}^n$ vector of $k$'s first $n$ powers: $\mathbf{k}^n = (1, k, k^2, \dots, k^{n-1})$, for example $\mathbf{0}^n, \mathbf{1}^n$ represents vectors of zeros and ones respectively, while $\mathbf{2}^{n} = (1, 2, 4, \dots, 2^{n-1})$
 
 \subsection{Zero-knowledge multiplication}
-Let $a,b,c \in \mathbb{F}_p$. Here we build a zero-knowledge protocol for relation $\mathcal{R}'_{mul} = \{ c; a,b: c=ab \}$. We use well-known $\Sigma$-protocol framework for that, but firstly we make very useful generalization that could allow us to prove much larger class of relations.
+Let $a,b,c \in \mathbb{F}_p$. Here we build a zero-knowledge protocol for relation $\mathcal{R}_{abc} = \{ ;c,a,b: c=ab \}$. We use well-known $\Sigma$-protocol framework for that, but firstly we make very useful generalization that could allow us to prove much larger class of relations.
 
 Consider the first-degree polynomials $l(x) = a + s_L x, r(x) = b + s_R x \in \mathbb{F}_p[x]$. Let $t(x) = l(x)r(x)$ and relation 
 $$\mathcal{R}_{mul} = \{ (;l(x),r(x),t(x))\in (\emptyset \times \mathbb{F}_p^3) \vert t(x) = l(x)r(x)\}$$
@@ -19,37 +22,35 @@ Firstly, observe that proving $t(x) = l(x)r(x)$ may be reduced to evaluation che
 $$\mathsf{Pr}[l(u)r(u) = t(u) \vert l(x)r(x) \neq t(x)] \le \frac{max(\deg(l(x)r(x)), \deg(t(x)))}{p} = \frac{2}{p}$$
 is typycally negligible function from security level which makes this check \textit{sound}.
 
-Let's describe naїve unoptimized version \textbf{polynomial multiplication} protocol $\Pi'_{mul} = (\mathsf{Setup},\mathcal{P,V})$ for relation $\mathcal{R}_{mul}$. 
+\subsubsection{Naїve polynomial multiplication protocol}
+Let's describe naїve unoptimized version of \textbf{polynomial multiplication} protocol $\Pi'_{mul} = (\mathsf{Setup},\mathcal{P,V})$ for relation $\mathcal{R}_{mul}$. 
 During $\mathsf{Setup}$ parties agree on group elements $G,B \in \mathbb{G}$. After that parties involve in the following protocol:
 \begin{itemize}
     \item Prover $\mathcal{P}$ computes:
-        $$t(x) = l(x)r(x) = (a+s_L x)(a+s_R x) = ab + (as_R + bs_L) + s_L s_R x^2$$
+        $$t(x) = l(x)r(x) = (a+s_L x)(b+s_R x) = ab + (as_R + bs_L) + s_L s_R x^2$$
     \item Prover $\mathcal{P}$ draws blinding factors $\alpha_0, \alpha_1, \beta_0, \beta_1, \tau_0, \tau_1, \tau_2 \xleftarrow{R} \mathbb{F}_p$ forming blinding polynomials 
     $$\alpha(x) = \alpha_0 + \alpha_1 x, \beta(x) = \beta_0 + \beta_1 x, \tau(x) = \tau_0 + \tau_1 x + \tau_2 x^2$$
     and sends to $\mathcal{V}$ Pedersen commitments for each coefficient of $l(x), r(x), t(x)$:
         \begin{equation}
             \begin{aligned}
-                L_0 &= [a]G + [\alpha_0]B \\
-                L_1 &= [s_L]G + [\alpha_1]B \\
-                &\\
-                R_0 &= [b]G + [\beta_0]B \\
-                R_1 &= [s_R]G + [\beta_1]B \\
-                &\\
-                T_0 &= [ab]G + [\tau_0]B \\
-                T_1 &= [as_R + bs_L]G + [\tau_1]B \\
-                T_2 &= [s_L s_R]G + [\tau_2]B
+                L_0 &= [a]G + [\alpha_0]B & R_0 &= [b]G + [\beta_0]B\\
+                L_1 &= [s_L]G + [\alpha_1]B &  R_1 &= [s_R]G + [\beta_1]B\\
+                &&&\\ % todo: centering
+                && T_0 &= [ab]G + [\tau_0]B \\
+                && T_1 &= [as_R + bs_L]G + [\tau_1]B \\
+                && T_2 &= [s_L s_R]G + [\tau_2]B
             \end{aligned}
         \end{equation}
+        \begin{remark}
+            Each commitment could be also seen as a Pedersen commitment to a reciprocal blinding polynomial coefficient as well.
+        \end{remark}
     \item Verifier $\mathcal{V}$ samples and sends to $\mathcal{P}$ random evaluation point $u \xleftarrow{R} \mathbb{F}_p$
     \item Prover $\mathcal{P}$ evaluates $l(x),r(x),t(x)$ and $\alpha(x), \beta(x), \tau(x)$ at $u$:
         \begin{equation}
             \begin{aligned}
-                l_u & = a + s_L u\\
-                r_u &= b + s_R u\\
-                t_u &= l_u r_u\\
-                \alpha_u &= \alpha_0 + \alpha_1 u\\
-                \beta_u &= \beta_0 + \beta_1 u\\
-                \tau_u &= \tau_0 + \tau_1 u + \tau_2 u^2
+                l_u & = a + s_L u & \alpha_u &= \alpha_0 + \alpha_1 u\\
+                r_u &= b + s_R u & \beta_u &= \beta_0 + \beta_1 u\\
+                t_u &= l_u r_u & \tau_u &= \tau_0 + \tau_1 u + \tau_2 u^2
             \end{aligned}
         \end{equation}
         and sends $(l_u, r_u, t_u, \alpha_u, \beta_u, \tau_u)$ to $\mathcal{V}$.
@@ -63,7 +64,111 @@ During $\mathsf{Setup}$ parties agree on group elements $G,B \in \mathbb{G}$. Af
             \end{aligned}
         \end{equation}
 \end{itemize}
+\begin{theorem}
+    Naїve \textbf{polynomial multiplication} protocol $\Pi'_{mul}$ has \textit{perfect completeness, special soundness, perfect honest-verifier zero-knowledge}
+    \label{th:poly_mul_naive}
+\end{theorem}
+\textbf{Proof idea.} \textit{Perfect completeness} holds due to:
+\begin{equation*}
+    \begin{aligned} % todo: fix overflow
+        [l_u]G + [\alpha_u]B &= [a + s_L u]G + [\alpha_0 + \alpha_1 u]B \\
+        L_0 + [u]L_1 &= [a]G + [\alpha_0]B + [s_L u]G + [\alpha_1 u]B = [a + s_L u]G + [\alpha_0 + \alpha_1 u]B \\
+        [r_u]G + [\beta_u]B &= [b + s_R u]G + [\beta_0 + \beta_1 u]B \\
+        R_0 + [u]R_1 &= [b]G + [\beta_0]B + [s_R u]G + [\beta_1 u]B = [b + s_R u]G + [\beta_0 + \beta_1 u]B\\
+        [t_u]G + [\tau_u]B &= [l_u r_u]G + [\tau_0 + \tau_1 u + \tau_2 u^2]B \\
+        T_0 + [u]T_1 + [u^2]T_2 &= [ab]G + [\tau_0]B + [u(as_R + bs_L)]G + [u]\tau_1 B + [u^2]s_L s_R G + [u^2]\tau_2 B \\
+            &= [ab + (as_R + bs_L)u + s_L s_R u^2]G + [\tau_0 + \tau_1 u + \tau_2 u^2]B \\
+            &= [t_u]G + [\tau_u]B
+    \end{aligned}
+\end{equation*}
 
+Proving \textit{honest-verifier zero-knowledge} is a bit complicated due to proper building of a simulator and proving indistinguishability of distributions, so we briefly describe the idea behind it: each commitment sent in the first phase by $\mathcal{P}$ is a Pedersen commitment which is hiding by design, every second phase response of $\mathcal{P}$ is an evaluation of some first or second degree polynomial at chosen point so there's not enough information for interpolation and polynomial reconstruction, moreover it could be easily simulated.
+
+To prove \textit{special soundness} we need to build a knowledge extractor $\mathcal{E}$: 
+\begin{enumerate}
+    \item $\mathcal{E}$ runs $\mathcal{P}$ to the end and rewinds back the second phase of $\mathcal{P}$, getting two non-equal challenges $u_1, u_2 \in \mathbb{F}_p$ and two prover responses $(l_{u_1}, r_{u_1}), (l_{u_2}, r_{u_2})$
+    \item $\mathcal{E}$ solves the following systems of linear equations:
+    \begin{equation*}
+        \begin{cases}
+            l_{u_1} = a + s_L u_1 \\
+            l_{u_2} = a + s_L u_2
+        \end{cases}
+        \qquad
+        \begin{cases}
+            r_{u_1} = b + s_R u_1 \\
+            r_{u_2} = b + s_R u_2
+        \end{cases}
+    \end{equation*}
+    and gets the coefficients of witness polynomials: $(a, s_L, b, s_R) \quad \square$
+\end{enumerate}
+
+\subsubsection{Optimized polynomial multiplication protocol}
+We could optimize our \textbf{polynomial multiplication protocol} furthermore. Note that we could simply apply vector Pedersen commitment for constant and linear terms using one more group element $H \in \mathbb{G}$.
+
+\begin{definition}
+    The \textbf{polynomial multiplication protocol} $\Pi_{mul} = (\mathsf{Setup}, \mathcal{P,V})$ for the relation $\mathcal{R}_{mul} = \{ (;l(x),r(x),t(x)) \vert t(x) = l(x)r(x)\}$ with prover $\mathcal{P}$ and verifier $\mathcal{V}$ is defined as follows:
+    \begin{itemize}
+        \item $\mathsf{Setup}$ returns triple of group generators with unknown discrete log relations $G, H, B \in \mathbb{G}$
+        \item Parties $\mathcal{P, V}$ run the following protocol:
+            \begin{itemize}
+                \item Prover $\mathcal{P}$ computes:
+                    $$t(x) = l(x)r(x) = (a+s_L x)(b+s_R x) = ab + (as_R + bs_L) + s_L s_R x^2$$
+                \item Prover $\mathcal{P}$ draws blinding factors $\alpha, \beta, \tau_0, \tau_1, \tau_2 \xleftarrow{R} \mathbb{F}_p$ and sends to $\mathcal{V}$ the following commitments for coefficients of $l(x), r(x), t(x)$:
+                    \begin{equation}
+                        \begin{aligned}
+                            A &= [a]G + [b]H + [\alpha]B\\
+                            S &= [s_L]G + [s_R]H + [\beta]B\\
+                            &\\ % todo: centering
+                            T_0 &= [ab]G + [\tau_0]B \\
+                            T_1 &= [as_R + bs_L]G + [\tau_1]B \\
+                            T_2 &= [s_L s_R]G + [\tau_2]B
+                        \end{aligned}
+                    \end{equation}
+                \item Verifier $\mathcal{V}$ samples and sends to $\mathcal{P}$ random evaluation point $u \xleftarrow{R} \mathbb{F}_p$
+                \item Prover $\mathcal{P}$ evaluates polynomials at $u$:
+                    \begin{equation}
+                        \begin{aligned}
+                            l_u & = a + s_L u & \alpha_u &= \alpha + \beta u\\
+                            r_u &= b + s_R u & \tau_u &= \tau_0 + \tau_1 u + \tau_2 u^2\\
+                            t_u &= l_u r_u & 
+                        \end{aligned}
+                    \end{equation}
+                    and sends $(l_u, r_u, t_u, \alpha_u, \tau_u)$ to $\mathcal{V}$.
+                \item Verifier $\mathcal{V}$ performs checks: 
+                    \begin{equation}
+                        \begin{aligned}
+                            A + [u]S &\stackrel{\text{?}}{=} [l_u]G + [r_u]H + [\alpha_u]B \\
+                            [t_u]G + [\tau_u]B &\stackrel{\text{?}}{=} T_0 + [u]T_1 + [u^2]T_2 \\
+                            t_u &\stackrel{\text{?}}{=} l_u r_u
+                        \end{aligned}
+                    \end{equation}
+            \end{itemize}
+    \end{itemize}
+\end{definition}
+
+\begin{theorem}
+    The \textbf{polynomial multiplication} protocol $\Pi_{mul}$ has \textit{perfect completeness, special soundness, perfect honest-verifier zero-knowledge}
+    \label{th:poly_mul}
+\end{theorem}
+\textbf{Proof}. We left to a reader proof of the theorem in the sake of brevity because it's very similar to the proof of \Cref{th:poly_mul_naive} $\quad \square$
+
+
+Finally, We could easily build the protocol for the zk-multiplication relation: $$\mathcal{R}_{abc} = \{ ;c,a,b \vert c=ab \}$$
+
+\begin{definition}
+    The \textbf{multiplication protocol} $\Pi_{abc} = (\mathsf{Setup}, \mathcal{P,V})$ for the relation $\mathcal{R}_{abc}$ with prover $\mathcal{P}$ and verifier $\mathcal{V}$ is defined as follows:
+    \begin{itemize}
+        \item $\mathsf{Setup}$ returns triple of group generators with unknown discrete log relations $G, H, B \in \mathbb{G}$
+        \item Parties $\mathcal{P, V}$ run the following protocol:
+            \begin{itemize}
+                \item Prover $\mathcal{P}$ draws random $s_L, s_R \xleftarrow{R} \mathbb{F}_p$ and defines polynomials: $$l(x)=a+s_L x,\quad r(x)=b+s_R x,\quad t(x)=l(x)r(x)$$
+                \item Parties run $\Pi_{mul}$ on inputs $(l(x),r(x),t(x))$
+            \end{itemize}
+    \end{itemize}
+\end{definition}
+The protocol obviously has \textit{perfect completeness, special soundness, perfect honest-verifier zero-knowledge} due to the \Cref{th:poly_mul}.
+
+\subsubsection{Vector polynomial multiplication protocol}
 
 \subsection{Inner-product argument}
 
@@ -317,7 +422,7 @@ Here we briefly describe a knowledge extractor $\mathcal{E}'_{ip}$ for a witness
         We need the fourth rewinding to assert equality of inner product: 
         $$\langle \mathbf{a}^{(1)}, \mathbf{b}^{(1)} \rangle = \sum_{i=1}^3 v_i \langle \mathbf{a}_i^{(0)}, \mathbf{b}_i^{(0)} \rangle$$
         We won't describe it fully since it takes some unwiedly technical details and refer a reder to the original \textit{bulletproofs} paper, where the full proof of extraction is described in Theorem 1.
-    \item The extractor $\mathcal{E}'_{ip}$ recursively extracts $\mathbf{a}^{(k+1)}, \mathbf{b}^{(k+1)}$ from $ \mathbf{a}^{(k)}, \mathbf{b}^{(k)}$ using the method described in steps 2-5 until it reaches the final witness $\mathbf{a}^{(d)}, \mathbf{b}^{(d)} = \mathbf{a}, \mathbf{b}$ for which holds relation $\mathcal{R}'_{ip}$: 
+    \item The extractor $\mathcal{E}'_{ip}$ recursively extracts $\mathbf{a}^{(k+1)}, \mathbf{b}^{(k+1)}$ from $ \mathbf{a}^{(k)}, \mathbf{b}^{(k)}$ using the method described in steps 2-5 until it reaches the final witness $\mathbf{a}^{(d)}, \mathbf{b}^{(d)} = \mathbf{a}, \mathbf{b}$ for which the relation $\mathcal{R}'_{ip}$ holds: 
     $$P' =  \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle + [\langle \mathbf{a,b} \rangle]Q$$
 \end{enumerate}
 Building the extractor $\mathcal{E}_{ip}$ for $\Pi_{ip}$ is quite simple relatively to what we've done by now:
@@ -345,17 +450,38 @@ Building the extractor $\mathcal{E}_{ip}$ for $\Pi_{ip}$ is quite simple relativ
 \end{enumerate}
 
 To formally finalize a proof of \textit{witness-extended emulation} we also need to apply so-called \textit{the forking lemma}, we again refer a reader to the original \textit{bulletproofs} paper $\quad \square$.
+
+\subsection{Inner-product based polynomial commitment scheme}
+
+Here we describe one of the main theoretical applications of the \textbf{inner-product argument} -- \textbf{polynomial commitment scheme}. 
 \subsection{Range proofs}
+
+Let's consider the relation $\mathcal{R}_{rp} = \{ (w; n) \vert v \in [0, 2^n) \}$. This relation is often called the \textbf{range proof} relation. It asserts that prescribed value $v$ lays in the interval $[0, 2^n)$. Range proofs have very significant applications in various privacy \textit{blockchain} protocols since them usually imply proving that transaction inputs or outputs are valid, e.g. have positive value or satisfy other relations between them.
+
+For the first view it seems very inconspicuous why \textbf{inner-product argument} is useful for proving the range proof relation, but we'll show it ab initio.
+
+Firstly, write $v$ in base-2 representation: $v = \sum_{i=0}^{\lfloor \log_2 v \rfloor} 2^i v_i$ and $\mathbf{a_L} = (v_0, v_1, \dots, v_{n-1})$ be the vector of bits padded with zeroes to length $n$, so the range validation that $v$ lays in $[0, 2^n)$ imlpies two checks:
+\begin{itemize}
+    \item Each bit $v_i$ must be either $0$ or $1$
+    \item The following inner-product equality holds: $\langle \mathbf{a_L}, \mathbf{2} \rangle = v$
+\end{itemize}
+
+We already know how to prove the second one inner product equality -- simply by taking evaluation point $u \gets 2$ in \textit{inner-product based polynomial commitment scheme}.
+
+The first relation is a bit more tricky to check algebraically, but still we'll manage to do that, note that binary check for $v_i$ takes form $v_i(v_i - 1) = 0$, or in vector form:
+\begin{align*}
+    \mathbf{a_R} \gets \mathbf{a_L} - \mathbf{1}^n \\
+    \mathbf{a_L} \circ \mathbf{a_R} = \mathbf{0}^n
+\end{align*}
 
 \subsection{Arithmetic circuits proofs}
 
-
-
 \subsection*{Acknowledgements}
-
+This section was heavily inspired by:
 \begin{itemize}
     \item \href{https://doc-internal.dalek.rs/bulletproofs/index.html}{dalek's crate bulletproofs}
     \item \href{https://eprint.iacr.org/2017/1066.pdf}{bulletproofs whitepaper}
+    \item \href{https://rareskills.io/post/zk-multiplication}{RareSkills explanation}
 \end{itemize}
 
 \end{document}
