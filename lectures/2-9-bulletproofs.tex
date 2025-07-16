@@ -166,19 +166,90 @@ Finally, We could easily build the protocol for the zk-multiplication relation: 
             \end{itemize}
     \end{itemize}
 \end{definition}
-The protocol obviously has \textit{perfect completeness, special soundness, perfect honest-verifier zero-knowledge} due to the \Cref{th:poly_mul}.
+Here we refer to $A$ as a Pedersen commitment to $a,b$ and $T_0$ as a Pedersen commitment to their product which could be given to verifier before start of the protocol. The protocol obviously has \textit{perfect completeness, special soundness, perfect honest-verifier zero-knowledge} due to the \Cref{th:poly_mul}.
 
-\subsubsection{Vector polynomial multiplication protocol}
+\begin{remark} %todo: add reference for Chaum-Pedersen
+    Now curious reader may wonder why build so overwhelmingly complicated protocol for simple multiplication and not just use classic \textit{Chaum-Pedersen protocol} for DH-triplets? Indeed, it definitely could establish that for given group elements $[a]G, [b]G, [c]G$ equality $c=ab$ holds, but unfortunatelly commitments $[a]G, [b]G, [c]G$ do not have a \textit{binding} property (though preserving hiding property) so they're almost useless for building more complex protocols where the prover usually needs to bind to specific values without having an ability to silently modify them.
+\end{remark}
+
+Also, there's a folklore version of very similar protocol for establishing product relationship between Pedersen committed values described in \href{https://people.cs.georgetown.edu/jthaler/ProofsArgsAndZK.pdf}{section 12.3 of Thaler's book}
+
+\subsubsection{Zero-knowledge inner-product protocol}
+
+We could extend our $\Pi_{mul}$ protocol even further to provide zero-knowledge proof for the inner-product of vectors: $\langle \mathbf{a, b} \rangle = v$. The main trick is to substitude polynomials $l(x), r(x) \in \mathbb{F}_p[x]$ by vector polynomials $\mathbf{l}(x), \mathbf{r}(x) \in \mathbb{F}_p^n[x]$ where constant terms are equal to $\mathbf{a}$ and $\mathbf{b}$ respectively, taking inner-product $\langle \mathbf{l}(x), \mathbf{r}(x) \rangle$ results in polynomial with scalar coefficients where constant term is equal to $\langle \mathbf{a, b} \rangle$.
+
+\begin{example}
+Let $\mathbf{a} = (a_1, a_2)$ and $\mathbf{b} = (b_1, b_2)$ be vectors in $\mathbb{F}_p^2$. Consider vector polynomials with vector coefficients:
+\[
+\mathbf{l}(x) = \mathbf{a} + \mathbf{s}_L x = (a_1, a_2) + (s_{L,1}, s_{L,2}) x
+\]
+\[
+\mathbf{r}(x) = \mathbf{b} + \mathbf{s}_R x = (b_1, b_2) + (s_{R,1}, s_{R,2}) x
+\]
+where $\mathbf{s}_L = (s_{L,1}, s_{L,2})$, $\mathbf{s}_R = (s_{R,1}, s_{R,2})$.
+
+Their inner-product is a degree two scalar polynomial:
+\begin{align*}
+t(x) &= \langle \mathbf{l}(x), \mathbf{r}(x) \rangle \\
+    &= \langle \mathbf{a} + \mathbf{s}_L x,\; \mathbf{b} + \mathbf{s}_R x \rangle \\
+    &= \langle \mathbf{a}, \mathbf{b} \rangle + \langle \mathbf{a}, \mathbf{s}_R \rangle x + \langle \mathbf{s}_L, \mathbf{b} \rangle x + \langle \mathbf{s}_L, \mathbf{s}_R \rangle x^2
+\end{align*}
+So the constant term is the inner-product $\langle \mathbf{a}, \mathbf{b} \rangle$.
+\end{example}
+
+\begin{definition}
+    The \textbf{zero-knowledge inner-product protocol} $\Pi_{zkip} = (\mathcal{P,V})$ for the relation 
+    \begin{align*}
+        \mathcal{R}_{zkip} = \{ (\mathbf{G,H},G,B,A,V;\mathbf{a,b},\alpha, \gamma) \vert & A = \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle + [\alpha] B, \\ &V = [\langle \mathbf{a,b} \rangle]G + [\gamma]B \}
+    \end{align*} where $\mathbf{G,H} \in \mathbb{G}^n, G,B \in \mathbb{G}$ -- independent group generators with prover $\mathcal{P}$ and verifier $\mathcal{V}$ is defined as follows:
+
+    \begin{itemize}
+        \item Prover $\mathcal{P}$ choses blinding vectors $\mathbf{s}_L, \mathbf{s}_R \in \mathbb{F}_p^n$ and computes polynomials:
+            \begin{align*}
+                \mathbf{l}(x) &= \mathbf{a} + \mathbf{s}_L x \\
+                \mathbf{r}(x) &= \mathbf{b} + \mathbf{s}_R x \\
+                t(x) &= \langle \mathbf{l}(x), \mathbf{r}(x) \rangle = \langle \mathbf{a}, \mathbf{b} \rangle + (\langle \mathbf{a}, \mathbf{s}_R \rangle + \langle \mathbf{s}_L, \mathbf{b} \rangle) x + \langle \mathbf{s}_L, \mathbf{s}_R \rangle x^2
+            \end{align*}
+        \item Prover $\mathcal{P}$ draws blinding factors $\beta, \tau_1, \tau_2 \xleftarrow{R} \mathbb{F}_p$ and sends to $\mathcal{V}$ the following commitments for coefficients of $\mathbf{l}(x), \mathbf{r}(x), \mathbf{t}(x)$:
+            \begin{equation}
+                \begin{aligned}
+                    S &= \langle \mathbf{s}_L, \mathbf{G} \rangle + \langle \mathbf{s}_R, \mathbf{H} \rangle + [\beta]B\\
+                    T_1 &= [\langle \mathbf{a}, \mathbf{s}_R \rangle + \langle \mathbf{s}_L, \mathbf{b} \rangle]G + [\tau_1]B \\
+                    T_2 &= [\langle \mathbf{s}_L \mathbf{s}_R \rangle]G + [\tau_2]B
+                \end{aligned}
+            \end{equation}
+        \item Verifier $\mathcal{V}$ samples and sends to $\mathcal{P}$ random evaluation point $u \xleftarrow{R} \mathbb{F}_p$
+        \item Prover $\mathcal{P}$ evaluates polynomials at $u$:
+            \begin{equation}
+                \begin{aligned}
+                    \mathbf{l}_u & = \mathbf{a} + \mathbf{s}_L u & \alpha_u &= \alpha + \beta u\\
+                    \mathbf{r}_u &= \mathbf{b} + \mathbf{s}_R u & \tau_u &= \tau_0 + \tau_1 u + \tau_2 u^2\\
+                    t_u &= \langle \mathbf{l}_u \mathbf{r}_u \rangle & 
+                \end{aligned}
+            \end{equation}
+            and sends $(\mathbf{l}_u, \mathbf{r}_u, t_u, \alpha_u, \tau_u)$ to $\mathcal{V}$.
+        \item Verifier $\mathcal{V}$ performs checks: 
+            \begin{equation}
+                \begin{aligned}
+                    A + [u]S &\stackrel{\text{?}}{=} \langle \mathbf{l}_u, \mathbf{G} \rangle + \langle \mathbf{r}_u, \mathbf{H} \rangle + [\alpha_u]B \\
+                    [t_u]G + [\tau_u]B &\stackrel{\text{?}}{=} V + [u]T_1 + [u^2]T_2 \\
+                    t_u &\stackrel{\text{?}}{=} \langle \mathbf{l}_u \mathbf{r}_u \rangle
+                \end{aligned}
+            \end{equation}
+    \end{itemize}
+\end{definition}
+
+The protocol also has \textit{perfect completeness, special soundness, perfect honest-verifier zero-knowledge} due to the \Cref{th:poly_mul}, however building the extractor needs some vector equations we omit for the sake of brevity. Also note that transcript size is linear in size of vectors $\mathbf{l}_u, \mathbf{r}_u$ which is extremly inefficient when vectors are large. So in the next section we present so called \textbf{inner-product argument} which is summoned to reduce conversational complexity to logarithmic in vector length making the last check $t_u \stackrel{\text{?}}{=} \langle \mathbf{l}_u \mathbf{r}_u \rangle$ quite efficient.
 
 \subsection{Inner-product argument}
 
-Here we describe the further generalization of $\Pi_{mul}$ -- protocol for the \textbf{inner-product argument} - core component of the \textbf{bulletproofs} protocol. After that we will apply it to range proofs and arithmetic circuits. We have already seen that inner-products are the main ingridients for R1CS language because any R1CS relation could be seen as a batch of inner-products though it's not the most efficient representation and we'll see how to amortize all the constraints into inner-products more efficiently.
+Here we describe the further generalization of $\Pi_{mul}$ -- efficient protocol for the \textbf{inner-product argument} - core component of the \textbf{bulletproofs} protocol. After that we will apply it to range proofs and arithmetic circuits. We have already seen that inner-products are the main ingridients for R1CS language because any R1CS relation could be seen as a batch of inner-products though it's not the most efficient representation and we'll see how to amortize all the constraints into inner-products more efficiently.
 
 The \textbf{inner-product argument} allows to prove that two vectors $\mathbf{a,b} \in \mathbb{F}_p^n$ satisfy the relation:
 $$\mathcal{R}_{ip} = \{ (\mathbf{G,H}, P, c; \mathbf{a,b}) \vert P = \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle \wedge \langle \mathbf{a,b} \rangle = c \}$$
 We refer to $P \in \mathbb{G}$ as a binding Pedersen vector commitment to $\mathbf{a,b}$.
 
-Trivial way to prove the relation is to send $\mathbf{a,b}$ to the verifier $\mathcal{V}$, but it is not a zero-knowledge proof nor efficient due to linear in $n$ size of the proof. We want to build a zero-knowledge proof of the relation $\mathcal{R}_{ip}$ with logarithmic in $n$ size of the proof.
+One way to prove the relation is to use $\Pi_{zkip}$, but as we've seen it's not efficient due to linear in $n$ size of the proof. We want to build an argument system for the relation $\mathcal{R}_{ip}$ with logarithmic in $n$ size of the proof.
 
 Firtsly, let's combine statements $P = \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle \wedge \langle \mathbf{a,b} \rangle = c$ into a single statement by multiplying the second one by a random $r \in \mathbb{F}_p$ and some orthogonal generator $B \in \mathbb{G}$, summing up:
 $$
@@ -364,7 +435,7 @@ Let's describe the \textbf{inner-product} protocol $\Pi'_{ip}$ for relation $\ma
     \label{fig:interactive_ip}
 \end{figure}
 
-As we can see, overall communication complexity of $\Pi_{ip}$ is $2\log_2 n \mathbb{G} + 2 \mathbb{F}_p$ so we come up with logarithmic proof size for our inner-product relation $\mathcal{R}_{ip}$. Now one might ask whether $\Pi_{ip}$ has any desired properties such as completeness, soundness and zero-knowledge. It appears that the first two holds under some generalizations needed for security proofs but not \textit{zero-knowledge} (indeed, if $n=1$ then $\mathcal{P}$ sends witness pair $a,b$ directly). We'll make further applications of \textit{inner-product argument} for range checks or arithmetic circuits \textit{zero-knowledge}.
+As we can see, overall communication complexity of $\Pi_{ip}$ is $2\log_2 n$ group elements plus $2$ field elements so we come up with logarithmic proof size for our inner-product relation $\mathcal{R}_{ip}$. Now one might ask whether $\Pi_{ip}$ has any desired properties such as completeness, soundness and zero-knowledge. It appears that the first two holds under some generalizations needed for security proofs but not \textit{zero-knowledge} (indeed, if $n=1$ then $\mathcal{P}$ sends witness pair $a,b$ directly). We'll combile efficient \textbf{inner-product argument} $\Pi_{ip}$ with zero-knowledge $\Pi_{zkip}$ to achieve efficient zero-knowledge proofs for range proofs and arithmetic circuits.
 
 \begin{theorem}[Inner-Product Argument]
     The argument system $\Pi_{ip}$ for relation $\mathcal{R}_{ip}$ has \textit{perfect completeness and statistical witness-extended emulation} for either extracting a non-trivial discrete logarithm relation between $\mathbf{G,H}, Q$ or extracting valid witness $\mathbf{a,b}$.
@@ -454,6 +525,20 @@ To formally finalize a proof of \textit{witness-extended emulation} we also need
 \subsection{Inner-product based polynomial commitment scheme}
 
 Here we describe one of the main theoretical applications of the \textbf{inner-product argument} -- \textbf{polynomial commitment scheme}. 
+
+\begin{definition}
+    The inner-product polynomial commitment scheme $\mathcal{C}_{ip} = (\mathsf{Commit, Open, VerifyOpen})$ is defined as follows. Let $f(x) = \sum_{i=0}^{n-1} a_i x^i \in \mathbb{F}_p[x]$ be a polynomial of degree $n-1$ and let $\mathbf{G} = (G_1, \dots, G_n)$ be independent group generators. 
+    \begin{itemize}
+        \item $\mathsf{Commit}$ returns polynomial commitment $\mathsf{Com}(f) = \langle \mathbf{f}, \mathbf{G} \rangle$ where $\mathbf{f} = (f_0, \dots, f_{n-1})$
+        \item $\mathsf{Open}$ given evaluation point $u \in \mathbb{F}_p$ computes $\mathbf{u^n} = (1, u, u^2, \dots, u^{n-1})$,  obtains $f(u) = \langle \mathbf{f, u^n} \rangle$ and runs \textit{inner-product argument} $\Pi_{ip}$ non-interactively setting $\mathbf{a} = \mathbf{f}, \mathbf{b} = \mathbf{u^n}, P = \mathsf{Com}(f), c = f(u)$ to produce an evaluation proof $\pi_{ip}$.
+        \item $\mathsf{VerifyOpen}$ validates proof $\pi_{ip}$ running the non-interactive verifier $\mathcal{V}$ of \textit{inner-product} argument.
+    \end{itemize}
+\end{definition}
+
+\begin{remark}
+    As the second vector $\mathbf{b} = \mathbf{u^n}$ is known to the verifier, the prover don't have to commit to it using vector $\mathbf{H}$, so the parties might adjust all the steps eliminating vector $\mathbf{H}$ and $\mathbf{b}$ vector compression as well. The full scheme is described \href{https://www.zkdocs.com/docs/zkdocs/commitments/ipa-pcs/}{here}.
+\end{remark}
+
 \subsection{Range proofs}
 
 Let's consider the relation $\mathcal{R}_{rp} = \{ (w; n) \vert v \in [0, 2^n) \}$. This relation is often called the \textbf{range proof} relation. It asserts that prescribed value $v$ lays in the interval $[0, 2^n)$. Range proofs have very significant applications in various privacy \textit{blockchain} protocols since them usually imply proving that transaction inputs or outputs are valid, e.g. have positive value or satisfy other relations between them.
