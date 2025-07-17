@@ -8,7 +8,7 @@
 
 Also, \textbf{bulletproofs}' \textbf{inner-product argument} could be used to build various polynomial commitment schemes -- crucial building block of proving systems built with \textit{IOP} framework (\textit{Halo, Nova, etc}).
 
-The main advantages of \textbf{bulletproofs} are an absence of a trusted setup, security that relies on the \textit{discrete-logarithm} assumption without any other auxiliary structures like bilinear pairings, quite fast prover for small circuits. However, the main disadvantage of \textbf{bulletproofs} is linear in circuit size verification time though still efficient for small circuits.
+The main advantages of \textbf{bulletproofs} are an absence of a trusted setup and security against eavesdropping that relies on the \textit{discrete-logarithm} assumption without any other auxiliary structures like bilinear pairings. Also it has quite fast prover for small circuits making it practically usefull for client-side proving. However, the main disadvantage of \textbf{bulletproofs} is linear in circuit size verification time though still efficient for small circuits.
 
 \subsection{Notation}
 Let $\mathbb{G}$ - cyclic group of prime order $p$ written additively, $\mathbf{G} = (G_1, \dots, G_n), \mathbf{H} = (H_1, \dots, H_n) \in \mathbb{G}^n$ - vectors of independent generators. We denote by $\langle \mathbf{a,b} \rangle$ - inner product of vectors $\mathbf{a} = (a_1, \dots, a_n), \mathbf{b} = (b_1, \dots, b_n) \in \mathbb{F}_p^n$ and $\langle \mathbf{a,G} \rangle = \sum_{i=1}^n [a_i] G_i \in \mathbb{G}$ - inner product of vector $\mathbf{a}$ with vector of generators $\mathbf{G}$. Denote by $\mathbf{k}^n$ vector of $k$'s first $n$ powers: $\mathbf{k}^n = (1, k, k^2, \dots, k^{n-1})$, for example $\mathbf{0}^n, \mathbf{1}^n$ represents vectors of zeros and ones respectively, while $\mathbf{2}^{n} = (1, 2, 4, \dots, 2^{n-1})$
@@ -524,14 +524,16 @@ To formally finalize a proof of \textit{witness-extended emulation} we also need
 
 \subsection{Inner-product based polynomial commitment scheme}
 
-Here we describe one of the main theoretical applications of the \textbf{inner-product argument} -- \textbf{polynomial commitment scheme}. 
+Here we describe one of the main theoretical applications of the \textit{inner-product argument} -- \textbf{polynomial commitment scheme} that relies only on \textit{discrete logarithm} assumption, while studied before \textit{KZG} commitment scheme needs bilinear pairings. 
 
 \begin{definition}
     The inner-product polynomial commitment scheme $\mathcal{C}_{ip} = (\mathsf{Commit, Open, VerifyOpen})$ is defined as follows. Let $f(x) = \sum_{i=0}^{n-1} a_i x^i \in \mathbb{F}_p[x]$ be a polynomial of degree $n-1$ and let $\mathbf{G} = (G_1, \dots, G_n)$ be independent group generators. 
     \begin{itemize}
-        \item $\mathsf{Commit}$ returns polynomial commitment $\mathsf{Com}(f) = \langle \mathbf{f}, \mathbf{G} \rangle$ where $\mathbf{f} = (f_0, \dots, f_{n-1})$
-        \item $\mathsf{Open}$ given evaluation point $u \in \mathbb{F}_p$ computes $\mathbf{u^n} = (1, u, u^2, \dots, u^{n-1})$,  obtains $f(u) = \langle \mathbf{f, u^n} \rangle$ and runs \textit{inner-product argument} $\Pi_{ip}$ non-interactively setting $\mathbf{a} = \mathbf{f}, \mathbf{b} = \mathbf{u^n}, P = \mathsf{Com}(f), c = f(u)$ to produce an evaluation proof $\pi_{ip}$.
-        \item $\mathsf{VerifyOpen}$ validates proof $\pi_{ip}$ running the non-interactive verifier $\mathcal{V}$ of \textit{inner-product} argument.
+        \item $\mathsf{Commit}$ returns polynomial commitment $\mathsf{Com}(f) = \langle \mathbf{f}, \mathbf{G} \rangle$ where $\mathbf{f} = (a_0, \dots, a_{n-1})$
+        \item $\mathsf{Open}$ given evaluation point $u \in \mathbb{F}_p$ computes $\mathbf{u^n} = (1, u, u^2, \dots, u^{n-1})$,  obtains $f(u) = \langle \mathbf{f, u^n} \rangle$ and runs \textit{inner-product argument} $\Pi_{ip}$ non-interactively setting 
+        $$\mathbf{a} = \mathbf{f}, \mathbf{b} = \mathbf{u^n}, P = \mathsf{Com}(f), c = f(u)$$ 
+        to produce an evaluation proof $\pi_{ip}$
+        \item $\mathsf{VerifyOpen}$ given evaluation point $u \in \mathbb{F}_p$ and commitment $\mathsf{Com}(f)$ validates proof $\pi_{ip}$ running the non-interactive verifier $\mathcal{V}$ of \textit{inner-product} argument.
     \end{itemize}
 \end{definition}
 
@@ -541,23 +543,139 @@ Here we describe one of the main theoretical applications of the \textbf{inner-p
 
 \subsection{Range proofs}
 
-Let's consider the relation $\mathcal{R}_{rp} = \{ (w; n) \vert v \in [0, 2^n) \}$. This relation is often called the \textbf{range proof} relation. It asserts that prescribed value $v$ lays in the interval $[0, 2^n)$. Range proofs have very significant applications in various privacy \textit{blockchain} protocols since them usually imply proving that transaction inputs or outputs are valid, e.g. have positive value or satisfy other relations between them.
+Let $G,B\in \mathbb{G}$ -- independent group generators. Let's consider the relation: 
+$$\mathcal{R}_{rp} = \{ (w; G, B, V, n) \vert V = [v]G + [\gamma]B, v \in [0, 2^n) \}$$ 
+This relation is often called the \textbf{range proof} relation. It asserts that committed value $v$ lays in the interval $[0, 2^n)$. Range proofs have very significant applications in various privacy \textit{blockchain} protocols since them usually imply proving that transaction inputs or outputs are valid, e.g. have positive value or satisfy other relations between them.
 
 For the first view it seems very inconspicuous why \textbf{inner-product argument} is useful for proving the range proof relation, but we'll show it ab initio.
 
 Firstly, write $v$ in base-2 representation: $v = \sum_{i=0}^{\lfloor \log_2 v \rfloor} 2^i v_i$ and $\mathbf{a_L} = (v_0, v_1, \dots, v_{n-1})$ be the vector of bits padded with zeroes to length $n$, so the range validation that $v$ lays in $[0, 2^n)$ imlpies two checks:
 \begin{itemize}
     \item Each bit $v_i$ must be either $0$ or $1$
-    \item The following inner-product equality holds: $\langle \mathbf{a_L}, \mathbf{2} \rangle = v$
+    \item The following inner-product equality holds: $\langle \mathbf{a_L}, \mathbf{2}^n \rangle = v$
 \end{itemize}
 
 We already know how to prove the second one inner product equality -- simply by taking evaluation point $u \gets 2$ in \textit{inner-product based polynomial commitment scheme}.
 
 The first relation is a bit more tricky to check algebraically, but still we'll manage to do that, note that binary check for $v_i$ takes form $v_i(v_i - 1) = 0$, or in vector form:
 \begin{align*}
-    \mathbf{a_R} \gets \mathbf{a_L} - \mathbf{1}^n \\
+    \mathbf{a_R} = \mathbf{a_L} - \mathbf{1}^n \Leftrightarrow  \mathbf{a_L} - \mathbf{a_R} - \mathbf{1}^n = \mathbf{0}^n \\
     \mathbf{a_L} \circ \mathbf{a_R} = \mathbf{0}^n
 \end{align*}
+
+\begin{example}
+    Let $\mathbf{a_L} = (1, 0, 1, 0)$, $\mathbf{a_R} = (0, -1, 0, -1)$, then 
+    $\mathbf{a_L} \circ \mathbf{a_R} = (0, 0, 0, 0)$
+\end{example}
+
+This two checks imply verification that some vector is zero vector, for that we use some challenge $y \in \mathbb{F}_p$ and check inner-product equalities $$\langle \mathbf{a_L} \circ \mathbf{a_R}, \mathbf{y}^n \rangle = 0 \text{ and } \langle \mathbf{a_L} - \mathbf{a_R} - \mathbf{1}^n, \mathbf{y}^n \rangle = 0$$
+This checks are sound because the prover doesn't know challenge $y$ in advance.
+
+Note that $\langle \mathbf{a_L} \circ \mathbf{a_R}, \mathbf{y}^n \rangle = \langle \mathbf{a_L}, \mathbf{a_R} \circ \mathbf{y}^n \rangle$ so the prover could commit to $\mathbf{a_L, a_R}$ and verifier will adjust commitment for $\mathbf{a_R}$ using modified generators $\mathbf{H} \circ \mathbf{y}^{-n}$.
+
+Here we came up with three inner-product checks:
+\begin{enumerate}
+    \item $\langle \mathbf{a_L}, \mathbf{2}^n \rangle = v$
+    \item $\langle \mathbf{a_L}, \mathbf{a_R} \circ \mathbf{y}^n \rangle = 0$
+    \item $\langle \mathbf{a_L} - \mathbf{a_R} - \mathbf{1}^n, \mathbf{y}^n \rangle = 0$
+\end{enumerate}
+
+Here we could soundly combine all three checks into one using random linear combintation with some verifier-provided challenge $z \in \mathbb{F}_p$:
+$$z^2 \cdot \langle \mathbf{a_L}, \mathbf{2}^n \rangle + z \cdot \langle \mathbf{a_L} - \mathbf{a_R} - \mathbf{1}^n, \mathbf{y}^n \rangle + \langle \mathbf{a_L}, \mathbf{a_R} \circ \mathbf{y}^n \rangle = z^2v$$
+
+\begin{remark}
+    Naїve check $\langle \mathbf{a_L}, \mathbf{2}^n \rangle + \langle \mathbf{a_L}, \mathbf{a_R} \circ \mathbf{y}^n \rangle + \langle \mathbf{a_L} - \mathbf{a_R} - \mathbf{1}^n, \mathbf{y}^n \rangle = v$ is not sound as Prover could adjust vectors to be non-zero but still satisfy the check.
+\end{remark}
+
+Now simplify this expression having only one inner-product check:
+\begin{equation*}
+    \begin{aligned}
+        & z^2 \cdot \langle \mathbf{a_L}, \mathbf{2}^n \rangle + z \cdot \langle \mathbf{a_L} - \mathbf{a_R} - \mathbf{1}^n, \mathbf{y}^n \rangle + \langle \mathbf{a_L}, \mathbf{a_R} \circ \mathbf{y}^n \rangle = z^2v \\
+        & z^2 \cdot \langle \mathbf{a_L}, \mathbf{2}^n \rangle + \boxed{z \cdot \langle \mathbf{a_L}, \mathbf{y}^n \rangle - z \cdot \langle \mathbf{a_R}, \mathbf{y}^n \rangle - z \cdot \langle \mathbf{1}^n, \mathbf{y}^n \rangle} + \langle \mathbf{a_L}, \mathbf{a_R} \circ \mathbf{y}^n \rangle = z^2v \\
+        & z^2 \cdot \langle \mathbf{a_L}, \mathbf{2}^n \rangle + \boxed{\langle \mathbf{a_L}, z \cdot \mathbf{y}^n \rangle + \langle - \mathbf{a_R}, z \cdot \mathbf{y}^n \rangle + \langle - z \cdot \mathbf{1}^n, \mathbf{y}^n \rangle} + \langle \mathbf{a_L}, \mathbf{a_R} \circ \mathbf{y}^n \rangle = z^2v \\
+        & z^2 \cdot \langle \mathbf{a_L}, \mathbf{2}^n \rangle + \langle \mathbf{a_L}, z \cdot \mathbf{y}^n \rangle + \boxed{\langle \mathbf{a_R} \circ \mathbf{y}^n, - z \cdot \mathbf{1}^n \rangle} + \langle \mathbf{a_L}, \mathbf{a_R} \circ \mathbf{y}^n \rangle = z^2v + \boxed{\langle z \cdot \mathbf{1}^n, \mathbf{y}^n \rangle} \\
+        & \boxed{\langle \mathbf{a_L}, z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n \rangle}  + \langle \mathbf{a_R} \circ \mathbf{y}^n, - z \cdot \mathbf{1}^n \rangle + \boxed{\langle\mathbf{a_L}, \mathbf{a_R} \circ \mathbf{y}^n \rangle} = z^2v + \langle z \cdot \mathbf{1}^n, \mathbf{y}^n \rangle \\
+        & \boxed{\langle \mathbf{a_L}, z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a_R} \circ \mathbf{y}^n\rangle}  + \langle \mathbf{a_R} \circ \mathbf{y}^n, - z \cdot \mathbf{1}^n \rangle = z^2v + \langle z \cdot \mathbf{1}^n, \mathbf{y}^n \rangle \\
+    \end{aligned}
+\end{equation*}
+
+Now adding to both sides $\langle z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n, - z \cdot \mathbf{1}^n \rangle$:
+\begin{equation*}
+    \begin{aligned}
+        & \langle \mathbf{a_L}, z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a_R} \circ \mathbf{y}^n\rangle + \langle \mathbf{a_R} \circ \mathbf{y}^n, - z \cdot \mathbf{1}^n \rangle + \boxed{\langle z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n, - z \cdot \mathbf{1}^n \rangle} = \\
+        & = z^2v + \langle z \cdot \mathbf{1}^n, \mathbf{y}^n \rangle + \boxed{\langle z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n, - z \cdot \mathbf{1}^n \rangle} \\
+        & \langle \mathbf{a_L}, z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a_R} \circ \mathbf{y}^n\rangle + \boxed{\langle z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a_R} \circ \mathbf{y}^n, - z \cdot \mathbf{1}^n \rangle} = \\
+        & = z^2v + \boxed{\langle z \cdot \mathbf{1}^n, \mathbf{y}^n \rangle + \langle z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n, - z \cdot \mathbf{1}^n \rangle} \\
+        & \langle \mathbf{a_L} - z \cdot \mathbf{1}^n, z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a_R} \circ \mathbf{y}^n\rangle = z^2v + \boxed{\delta(y,z)}
+    \end{aligned}
+\end{equation*}
+
+Where $\delta(y,z)$ could easily be computed by verifier:
+$$\delta(y,z) = \langle z \cdot \mathbf{1}^n, \mathbf{y}^n \rangle + \langle z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n, - z \cdot \mathbf{1}^n \rangle = (z-z^2)\langle \mathbf{1}^n, \mathbf{y}^n \rangle - z^3 \langle \mathbf{1}^n, \mathbf{2}^n \rangle $$
+Now we have only one inner-product check left:
+
+\begin{equation}
+    \langle \mathbf{a_L} - z \cdot \mathbf{1}^n, z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a_R} \circ \mathbf{y}^n\rangle = z^2v + \delta(y,z)
+    \label{eq:inner_product_check}
+\end{equation}
+
+We will use a technique presented in $\Pi_{zkip}$ to provide zero-knowledge and \textbf{inner-product argument} to achieve logarithmic size-proof. One key problem is that the verifier must adjust commitments to compensate auxiliary terms.
+
+\begin{definition}
+    The \textbf{range proof protocol} $\Pi_{rp} = (\mathsf{Setup}, \mathcal{P,V})$ for the relation $\mathcal{R}_{rp} = \{ (w; G, B, V, n) \vert V = [v]G + [\gamma]B, v \in [0, 2^n) \}$ with prover $\mathcal{P}$ and verifier $\mathcal{V}$ is defined as follows:
+    \begin{itemize}
+        \item $\mathsf{Setup}$ returns vectors of group generators with unknown discrete log relations $\mathbf{G, H} \in \mathbb{G}^n$
+        \item Prover does bit decomposition of $v$ to obtain vectors $\mathbf{a_L} \gets \mathbf{v}, \mathbf{b_L} \gets \mathbf{a_L} - \mathbf{1}^n$ and choses blinding terms $\mathbf{s}_L, \mathbf{s}_R \in \mathbb{F}_p^n, \alpha, \beta \in \mathbb{F}_p$ computing and sending commitments:
+            \begin{align*}
+                A = \langle \mathbf{a_L}, \mathbf{G} \rangle + \langle \mathbf{b_L}, \mathbf{H} \rangle + [\alpha]B\\
+                S = \langle \mathbf{s}_L, \mathbf{G} \rangle + \langle \mathbf{s}_R, \mathbf{H} \rangle + [\beta]B
+            \end{align*}
+        \item Verifier $\mathcal{V}$ samples challenges $y, z \xleftarrow{R} \mathbb{F}_p$ and sends them to $\mathcal{P}$
+        \item Prover $\mathcal{P}$ combines the three inner products into one using provided challenges $y,z$ (\ref{eq:inner_product_check}) and reconstructs vector  polynomials $\mathbf{l}(x), \mathbf{r}(x), \mathbf{t}(x)$:
+            \begin{equation*}
+                \begin{aligned}
+                    \mathbf{l}(x) &= \mathbf{a_L} - z \cdot \mathbf{1}^n + \mathbf{s_L} x\\
+                    \mathbf{r}(x) &= z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a_R} \circ \mathbf{y}^n + \mathbf{s}_R \circ \mathbf{y}^n x\\
+                    t(x) &= \langle \mathbf{l}(x), \mathbf{r}(x) \rangle = t_0 + t_1 x + t_2 x^2
+                \end{aligned}
+            \end{equation*}
+            Where 
+            \begin{equation*}
+                \begin{aligned}
+                    t_0 &= \langle \mathbf{a_L} - z \cdot \mathbf{1}^n, z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a_R} \circ \mathbf{y}^n\rangle\\
+                    t_1 &= \langle \mathbf{a_L} - z \cdot \mathbf{1}^n, \mathbf{y}^n \circ \mathbf{s}_R \rangle + \langle \mathbf{y}^n \circ (\mathbf{a_R} + z\cdot \mathbf{1}^n ) + z^2 \cdot \mathbf{2}^n, \mathbf{s}_L\rangle \\
+                    t_2 & = \langle \mathbf{s}_L, \mathbf{y}^n \circ \mathbf{s}_R \rangle
+                \end{aligned}
+            \end{equation*}
+        \item Prover $\mathcal{P}$ draws blinding factors $\tau_1, \tau_2 \xleftarrow{R} \mathbb{F}_p$ and sends to $\mathcal{V}$ the following commitments for coefficients of $\mathbf{t}(x)$:
+            \begin{equation}
+                \begin{aligned}
+                    T_1 &= [t_1]G + [\tau_1]B \\
+                    T_2 &= [t_2]G + [\tau_2]B
+                \end{aligned}
+            \end{equation}
+            \textbf{Note:} prover does not have to send commitment to $t_0$ as it's the inner-product we want to prove and it could be computed from high-level commitment $V$.
+        \item Verifier $\mathcal{V}$ samples and sends to $\mathcal{P}$ random evaluation point $u \xleftarrow{R} \mathbb{F}_p$
+        \item Prover $\mathcal{P}$ evaluates polynomials at $u$:
+            \begin{equation}
+                \begin{aligned}
+                    \mathbf{l}_u & = \mathbf{l}(u) & \alpha_u &= \alpha + \beta u\\
+                    \mathbf{r}_u &= \mathbf{r}(u) & \tau_u &= z^2\gamma + \tau_1 u + \tau_2 u^2\\
+                    t_u &= t(u) = \langle \mathbf{l}_u \mathbf{r}_u \rangle & 
+                \end{aligned}
+            \end{equation}
+            and sends $(\mathbf{l}_u, \mathbf{r}_u, t_u, \alpha_u, \tau_u)$ to $\mathcal{V}$.
+        \item Verifier $\mathcal{V}$ performs checks: 
+            \begin{equation}
+                \begin{aligned}
+                    A + [u]S + \langle -z \cdot \mathbf{1}^n, \mathbf{G} \rangle &+ \langle z \cdot \mathbf{y}^n + z^2 \cdot \mathbf{2}^n, \mathbf{y}^{-n} \circ \mathbf{H} \rangle \\
+                    &\stackrel{\text{?}}{=} \langle \mathbf{l}_u, \mathbf{G} \rangle + \langle \mathbf{r}_u, \mathbf{H} \rangle + [\alpha_u]B \\
+                    [t_u]G + [\tau_u]B &\stackrel{\text{?}}{=} V + [u]T_1 + [u^2]T_2 \\
+                    t_u &\stackrel{\text{?}}{=} \langle \mathbf{l}_u \mathbf{r}_u \rangle
+                \end{aligned}
+            \end{equation}
+    \end{itemize}
+\end{definition}
 
 \subsection{Arithmetic circuits proofs}
 
