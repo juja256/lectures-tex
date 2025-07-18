@@ -621,6 +621,15 @@ Now we have only one inner-product check left:
 
 We will use a technique presented in $\Pi_{zkip}$ to provide zero-knowledge and \textbf{inner-product argument} to achieve logarithmic size-proof. One key problem is that the verifier must adjust commitments to compensate auxiliary terms.
 
+Firstly, construct the blinding polynomials for $\mathbf{a_L}$ and $\mathbf{a_R}$ with substitution:
+\begin{align*}
+    \mathbf{a_L}' &\gets \mathbf{a_L} + \mathbf{s_L} x \quad
+    \mathbf{a_R}' \gets \mathbf{a_R} + \mathbf{s_R} x \\
+    \mathbf{l}(x) &= \mathbf{a_L}' - z \cdot \mathbf{1}^n = (\mathbf{a_L} + \mathbf{s_L} x) - z \cdot \mathbf{1}^n\\
+    \mathbf{r}(x) &= z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a_R}' \circ \mathbf{y}^n = z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + (\mathbf{a_R} + \mathbf{s_R} x) \circ \mathbf{y}^n \\
+    & = z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a_R} \circ \mathbf{y}^n + \mathbf{s_R} \circ \mathbf{y}^n x
+\end{align*}
+
 \begin{definition}
     The \textbf{range proof protocol} $\Pi_{rp} = (\mathsf{Setup}, \mathcal{P,V})$ for the relation $\mathcal{R}_{rp} = \{ (w; G, B, V, n) \vert V = [v]G + [\gamma]B, v \in [0, 2^n) \}$ with prover $\mathcal{P}$ and verifier $\mathcal{V}$ is defined as follows:
     \begin{itemize}
@@ -669,7 +678,7 @@ We will use a technique presented in $\Pi_{zkip}$ to provide zero-knowledge and 
             \begin{equation}
                 \begin{aligned}
                     A + [u]S + \langle -z \cdot \mathbf{1}^n, \mathbf{G} \rangle &+ \langle z \cdot \mathbf{y}^n + z^2 \cdot \mathbf{2}^n, \mathbf{y}^{-n} \circ \mathbf{H} \rangle \\
-                    &\stackrel{\text{?}}{=} \langle \mathbf{l}_u, \mathbf{G} \rangle + \langle \mathbf{r}_u, \mathbf{H} \rangle + [\alpha_u]B \\
+                    &\stackrel{\text{?}}{=} \langle \mathbf{l}_u, \mathbf{G} \rangle + \langle \mathbf{r}_u, \mathbf{y}^{-n} \circ \mathbf{H} \rangle + [\alpha_u]B \\
                     [t_u]G + [\tau_u]B &\stackrel{\text{?}}{=} V + [u]T_1 + [u^2]T_2 \\
                     t_u &\stackrel{\text{?}}{=} \langle \mathbf{l}_u \mathbf{r}_u \rangle
                 \end{aligned}
@@ -677,6 +686,16 @@ We will use a technique presented in $\Pi_{zkip}$ to provide zero-knowledge and 
     \end{itemize}
 \end{definition}
 
+\begin{remark}
+    The last two steps of $\Pi_{rp}$ could be substituted with an inner-product argument $\Pi_{ip}$ to provide logarithmic size-proof with the following steps:
+    \begin{itemize}
+        \item $\mathcal{P}$ sends $t_u, \alpha_u, \tau_u$ to $\mathcal{V}$ and computes commitment: 
+        $$P = \langle \mathbf{l}_u, \mathbf{G} \rangle + \langle \mathbf{r}_u, \mathbf{y}^{-n} \circ \mathbf{H} \rangle$$
+        \item $\mathcal{V}$ performs check $[t_u]G + [\tau_u]B \stackrel{\text{?}}{=} V + [u]T_1 + [u^2]T_2$, halts if it fails and reconstructs commitment $P$ otherwise:
+        $$P = A + [u]S + \langle -z \cdot \mathbf{1}^n, \mathbf{G} \rangle + \langle z \cdot \mathbf{y}^n + z^2 \cdot \mathbf{2}^n, \mathbf{y}^{-n} \circ \mathbf{H} \rangle - [\alpha_u]B$$
+        \item Parties run $\Pi_{ip}$ on inputs: $(\mathbf{G},\mathbf{y}^{-n} \circ \mathbf{H}, P, t_u; \mathbf{l}_u, \mathbf{r}_u)$
+    \end{itemize}
+\end{remark}
 \subsection{Arithmetic circuits proofs}
 
 \subsection*{Acknowledgements}
