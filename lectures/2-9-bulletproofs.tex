@@ -71,14 +71,17 @@ During $\mathsf{Setup}$ parties agree on group elements $G,B \in \mathbb{G}$. Af
 \textbf{Proof idea.} \textit{Perfect completeness} holds due to:
 \begin{equation*}
     \begin{aligned} % todo: fix overflow
-        [l_u]G + [\alpha_u]B &= [a + s_L u]G + [\alpha_0 + \alpha_1 u]B \\
-        L_0 + [u]L_1 &= [a]G + [\alpha_0]B + [s_L u]G + [\alpha_1 u]B = [a + s_L u]G + [\alpha_0 + \alpha_1 u]B \\
-        [r_u]G + [\beta_u]B &= [b + s_R u]G + [\beta_0 + \beta_1 u]B \\
-        R_0 + [u]R_1 &= [b]G + [\beta_0]B + [s_R u]G + [\beta_1 u]B = [b + s_R u]G + [\beta_0 + \beta_1 u]B\\
-        [t_u]G + [\tau_u]B &= [l_u r_u]G + [\tau_0 + \tau_1 u + \tau_2 u^2]B \\
-        T_0 + [u]T_1 + [u^2]T_2 &= [ab]G + [\tau_0]B + [u(as_R + bs_L)]G + [u]\tau_1 B + [u^2]s_L s_R G + [u^2]\tau_2 B \\
+        [l_u]G + [\alpha_u]B &= \textcolor{RoyalBlue}{[a + s_L u]G + [\alpha_0 + \alpha_1 u]B} \\
+        L_0 + [u]L_1 &= [a]G + [\alpha_0]B + [s_L u]G + [\alpha_1 u]B = \\
+        &= \textcolor{RoyalBlue}{[a + s_L u]G + [\alpha_0 + \alpha_1 u]B} \\
+        [r_u]G + [\beta_u]B &= \textcolor{OliveGreen}{[b + s_R u]G + [\beta_0 + \beta_1 u]B} \\
+        R_0 + [u]R_1 &= [b]G + [\beta_0]B + [s_R u]G + [\beta_1 u]B = \\ 
+        &= \textcolor{RoyalBlue}{[b + s_R u]G + [\beta_0 + \beta_1 u]B}\\
+        [t_u]G + [\tau_u]B &= \textcolor{Plum}{[l_u r_u]G + [\tau_0 + \tau_1 u + \tau_2 u^2]B} \\
+        T_0 + [u]T_1 + [u^2]T_2 &= [ab]G + [\tau_0]B + [u(as_R + bs_L)]G + \\
+        &+[u]\tau_1 B + [u^2]s_L s_R G + [u^2]\tau_2 B \\
             &= [ab + (as_R + bs_L)u + s_L s_R u^2]G + [\tau_0 + \tau_1 u + \tau_2 u^2]B \\
-            &= [t_u]G + [\tau_u]B
+            &= \textcolor{Plum}{[l_u r_u]G + [\tau_0 + \tau_1 u + \tau_2 u^2]B}
     \end{aligned}
 \end{equation*}
 
@@ -324,6 +327,10 @@ Recalling that $P_k = P'$, the final compressed statement asserting inner-produc
     \label{eq:ip-final-compressed}
 \end{equation}
 
+\begin{remark}
+    We take $n=2^d$ without loss of generality, since one could always pad the vectors with zeroes to make their length a power of two and inner-product compression would shrink the size of the vectors by a factor of two per compression step down to one element.
+\end{remark}
+
 \subsubsection{Proving $\mathcal{R}'_{ip}$}
 
 Let's describe the \textbf{inner-product} protocol $\Pi'_{ip}$ for relation $\mathcal{R}'_{ip}$. 
@@ -544,7 +551,7 @@ Here we describe one of the main theoretical applications of the \textit{inner-p
 \subsection{Range proofs}
 
 Let $G,B\in \mathbb{G}$ -- independent group generators. Let's consider the relation: 
-$$\mathcal{R}_{rp} = \{ (w; G, B, V, n) \vert V = [v]G + [\gamma]B, v \in [0, 2^n) \}$$ 
+$$\mathcal{R}_{rp} = \{ (G, B, V, n; v, \gamma) \vert V = [v]G + [\gamma]B, v \in [0, 2^n) \}$$ 
 This relation is often called the \textbf{range proof} relation. It asserts that committed value $v$ lays in the interval $[0, 2^n)$. Range proofs have very significant applications in various privacy \textit{blockchain} protocols since them usually imply proving that transaction inputs or outputs are valid, e.g. have positive value or satisfy other relations between them.
 
 For the first view it seems very inconspicuous why \textbf{inner-product argument} is useful for proving the range proof relation, but we'll show it ab initio.
@@ -622,16 +629,16 @@ Now we have only one inner-product check left:
 We will use a technique presented in $\Pi_{zkip}$ to provide zero-knowledge and \textbf{inner-product argument} to achieve logarithmic size-proof. One key problem is that the verifier must adjust commitments to compensate auxiliary terms.
 
 Firstly, construct the blinding polynomials for $\mathbf{a_L}$ and $\mathbf{a_R}$ with substitution:
+$$\mathbf{a_L}' \gets \mathbf{a_L} + \mathbf{s_L} x \quad \mathbf{a_R}' \gets \mathbf{a_R} + \mathbf{s_R} x$$
+Compute polynomials $\mathbf{l}(x) = \mathbf{l}_0 + \mathbf{l}_1 x, \quad \mathbf{r}(x) = \mathbf{r}_0 + \mathbf{r}_1 x$:
 \begin{align*}
-    \mathbf{a_L}' &\gets \mathbf{a_L} + \mathbf{s_L} x \quad
-    \mathbf{a_R}' \gets \mathbf{a_R} + \mathbf{s_R} x \\
-    \mathbf{l}(x) &= \mathbf{a_L}' - z \cdot \mathbf{1}^n = (\mathbf{a_L} + \mathbf{s_L} x) - z \cdot \mathbf{1}^n\\
+    \mathbf{l}(x) &= \mathbf{a_L}' - z \cdot \mathbf{1}^n = (\mathbf{a_L} + \mathbf{s_L} x) - z \cdot \mathbf{1}^n = \mathbf{a_L} - z \cdot \mathbf{1}^n + \mathbf{s_L} x\\
     \mathbf{r}(x) &= z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a_R}' \circ \mathbf{y}^n = z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + (\mathbf{a_R} + \mathbf{s_R} x) \circ \mathbf{y}^n \\
     & = z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a_R} \circ \mathbf{y}^n + \mathbf{s_R} \circ \mathbf{y}^n x
 \end{align*}
-
+So that $\langle \mathbf{l}_0, \mathbf{r}_0 \rangle = z^2v + \delta(y,z)$ -- inner product that we want to prove using a bit modified $\Pi_{zkip}$. 
 \begin{definition}
-    The \textbf{range proof protocol} $\Pi_{rp} = (\mathsf{Setup}, \mathcal{P,V})$ for the relation $\mathcal{R}_{rp} = \{ (w; G, B, V, n) \vert V = [v]G + [\gamma]B, v \in [0, 2^n) \}$ with prover $\mathcal{P}$ and verifier $\mathcal{V}$ is defined as follows:
+    The \textbf{range proof protocol} $\Pi_{rp} = (\mathsf{Setup}, \mathcal{P,V})$ for the relation $\mathcal{R}_{rp} = \{ (G, B, V, n; v, \gamma) \vert V = [v]G + [\gamma]B, v \in [0, 2^n) \}$ with prover $\mathcal{P}$ and verifier $\mathcal{V}$ is defined as follows:
     \begin{itemize}
         \item $\mathsf{Setup}$ returns vectors of group generators with unknown discrete log relations $\mathbf{G, H} \in \mathbb{G}^n$
         \item Prover does bit decomposition of $v$ to obtain vectors $\mathbf{a_L} \gets \mathbf{v}, \mathbf{b_L} \gets \mathbf{a_L} - \mathbf{1}^n$ and choses blinding terms $\mathbf{s}_L, \mathbf{s}_R \in \mathbb{F}_p^n, \alpha, \beta \in \mathbb{F}_p$ computing and sending commitments:
@@ -651,7 +658,7 @@ Firstly, construct the blinding polynomials for $\mathbf{a_L}$ and $\mathbf{a_R}
             Where 
             \begin{equation*}
                 \begin{aligned}
-                    t_0 &= \langle \mathbf{a_L} - z \cdot \mathbf{1}^n, z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a_R} \circ \mathbf{y}^n\rangle\\
+                    t_0 &= \langle \mathbf{a_L} - z \cdot \mathbf{1}^n, z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a_R} \circ \mathbf{y}^n\rangle = z^2v + \delta(y,z)\\
                     t_1 &= \langle \mathbf{a_L} - z \cdot \mathbf{1}^n, \mathbf{y}^n \circ \mathbf{s}_R \rangle + \langle \mathbf{y}^n \circ (\mathbf{a_R} + z\cdot \mathbf{1}^n ) + z^2 \cdot \mathbf{2}^n, \mathbf{s}_L\rangle \\
                     t_2 & = \langle \mathbf{s}_L, \mathbf{y}^n \circ \mathbf{s}_R \rangle
                 \end{aligned}
@@ -670,7 +677,7 @@ Firstly, construct the blinding polynomials for $\mathbf{a_L}$ and $\mathbf{a_R}
                 \begin{aligned}
                     \mathbf{l}_u & = \mathbf{l}(u) & \alpha_u &= \alpha + \beta u\\
                     \mathbf{r}_u &= \mathbf{r}(u) & \tau_u &= z^2\gamma + \tau_1 u + \tau_2 u^2\\
-                    t_u &= t(u) = \langle \mathbf{l}_u \mathbf{r}_u \rangle & 
+                    t_u &= t(u) = z^2v + \delta(y,z) + t_1u + t_2u^2 & 
                 \end{aligned}
             \end{equation}
             and sends $(\mathbf{l}_u, \mathbf{r}_u, t_u, \alpha_u, \tau_u)$ to $\mathcal{V}$.
@@ -679,7 +686,7 @@ Firstly, construct the blinding polynomials for $\mathbf{a_L}$ and $\mathbf{a_R}
                 \begin{aligned}
                     A + [u]S + \langle -z \cdot \mathbf{1}^n, \mathbf{G} \rangle &+ \langle z \cdot \mathbf{y}^n + z^2 \cdot \mathbf{2}^n, \mathbf{y}^{-n} \circ \mathbf{H} \rangle \\
                     &\stackrel{\text{?}}{=} \langle \mathbf{l}_u, \mathbf{G} \rangle + \langle \mathbf{r}_u, \mathbf{y}^{-n} \circ \mathbf{H} \rangle + [\alpha_u]B \\
-                    [t_u]G + [\tau_u]B &\stackrel{\text{?}}{=} V + [u]T_1 + [u^2]T_2 \\
+                    [t_u]G + [\tau_u]B &\stackrel{\text{?}}{=} [z^2]V + [\delta(y,z)]G + [u]T_1 + [u^2]T_2 \\
                     t_u &\stackrel{\text{?}}{=} \langle \mathbf{l}_u \mathbf{r}_u \rangle
                 \end{aligned}
             \end{equation}
@@ -689,14 +696,79 @@ Firstly, construct the blinding polynomials for $\mathbf{a_L}$ and $\mathbf{a_R}
 \begin{remark}
     The last two steps of $\Pi_{rp}$ could be substituted with an inner-product argument $\Pi_{ip}$ to provide logarithmic size-proof with the following steps:
     \begin{itemize}
-        \item $\mathcal{P}$ sends $t_u, \alpha_u, \tau_u$ to $\mathcal{V}$ and computes commitment: 
+        \item After $\mathcal{P}$ evaluates polynomials at $u$ he sends $(t_u, \alpha_u, \tau_u$ to $\mathcal{V})$ and computes commitment: 
         $$P = \langle \mathbf{l}_u, \mathbf{G} \rangle + \langle \mathbf{r}_u, \mathbf{y}^{-n} \circ \mathbf{H} \rangle$$
-        \item $\mathcal{V}$ performs check $[t_u]G + [\tau_u]B \stackrel{\text{?}}{=} V + [u]T_1 + [u^2]T_2$, halts if it fails and reconstructs commitment $P$ otherwise:
+        \item $\mathcal{V}$ performs check $[t_u]G + [\tau_u]B \stackrel{\text{?}}{=} [z^2]V + [\delta(y,z)]G + [u]T_1 + [u^2]T_2$, halts if it fails and reconstructs commitment $P$ otherwise:
         $$P = A + [u]S + \langle -z \cdot \mathbf{1}^n, \mathbf{G} \rangle + \langle z \cdot \mathbf{y}^n + z^2 \cdot \mathbf{2}^n, \mathbf{y}^{-n} \circ \mathbf{H} \rangle - [\alpha_u]B$$
-        \item Parties run $\Pi_{ip}$ on inputs: $(\mathbf{G},\mathbf{y}^{-n} \circ \mathbf{H}, P, t_u; \mathbf{l}_u, \mathbf{r}_u)$
+        \item Parties run inner-product argument $\Pi_{ip}$ on $(\mathbf{G},\mathbf{y}^{-n} \circ \mathbf{H}, P, t_u; \mathbf{l}_u, \mathbf{r}_u)$
     \end{itemize}
 \end{remark}
+
+\begin{theorem}
+    The \textbf{range proof protocol} $\Pi_{rp}$ has \textit{perfect completeness, computational extended witness emulation, perfect honest-verifier zero-knowledge}
+    \label{th:range_proof}
+\end{theorem}
+\textbf{Proof idea}. \textit{Perfect completeness} 
+
+Expand LHS of the commitment consistency check:
+\begin{equation*}
+    \begin{aligned}
+        &\textcolor{teal}{A} + \textcolor{olive}{[u]S} + \langle -z \cdot \mathbf{1}^n, \mathbf{G} \rangle + \langle z \cdot \mathbf{y}^n + z^2 \cdot \mathbf{2}^n, \mathbf{y}^{-n} \circ \mathbf{H} \rangle = \\
+        &\textcolor{teal}{\langle \mathbf{a_L}, \mathbf{G} \rangle + \langle \mathbf{b_L}, \mathbf{H} \rangle + [\alpha]B} + \textcolor{olive}{u \cdot \langle \mathbf{s}_L, \mathbf{G} \rangle + u \cdot \langle \mathbf{s}_R, \mathbf{H} \rangle + [u\beta]B} + \\
+        & \langle -z \cdot \mathbf{1}^n, \mathbf{G} \rangle + \langle z \cdot \mathbf{y}^n + z^2 \cdot \mathbf{2}^n, \mathbf{y}^{-n} \circ \mathbf{H} \rangle = \\
+        &\langle \mathbf{a_L}, \mathbf{G} \rangle + \langle \mathbf{b_L}, \mathbf{H} \rangle + u \cdot \langle \mathbf{s}_L, \mathbf{G} \rangle + u \cdot \langle \mathbf{s}_R, \mathbf{H} \rangle + \\
+        &\langle -z \cdot \mathbf{1}^n, \mathbf{G} \rangle + \langle z \cdot \mathbf{1}^n, \mathbf{H} \rangle + \langle z^2 \cdot \mathbf{2}^n, \mathbf{y}^{-n} \circ \mathbf{H} \rangle + [\alpha + u\beta]B
+    \end{aligned}
+\end{equation*}
+
+Expand RHS of the commitment consistency check:
+\begin{equation*}
+    \begin{aligned}
+        &\textcolor{Violet}{\langle \mathbf{l}_u, \mathbf{G} \rangle} + \textcolor{Sepia}{\langle \mathbf{r}_u, \mathbf{y}^{-n} \circ \mathbf{H} \rangle} + [\textcolor{Peach}{\alpha_u}]B = \\
+        &\textcolor{Violet}{\langle \mathbf{a_L} - z \cdot \mathbf{1}^n + \mathbf{s_L} \cdot u, \mathbf{G} \rangle} + \textcolor{Sepia}{\langle z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a_R} \circ \mathbf{y}^n + \mathbf{s}_R \circ \mathbf{y}^n \cdot u, \mathbf{y}^{-n} \circ \mathbf{H} \rangle} \\ 
+        &+ [\textcolor{Peach}{\alpha + u\beta}]B = \\
+        & \langle \mathbf{a}_L, \mathbf{G} \rangle + \langle -z \cdot \mathbf{1}^n, \mathbf{G} \rangle + u \cdot \langle \mathbf{s}_L, \mathbf{G} \rangle + \langle z^2 \cdot \mathbf{2}^n, \mathbf{y}^{-n} \circ \mathbf{H} \rangle + \langle z \cdot \mathbf{1}^n, \mathbf{H} \rangle + \\
+        & \langle \mathbf{a_R}, \mathbf{H} \rangle + u\cdot \langle \mathbf{s}_R, \mathbf{H} \rangle + [\alpha + u\beta]B
+    \end{aligned}
+\end{equation*}
+We could see that \textit{LHS} is equal to \textit{RHS} so the first check pass. 
+
+Taking the polynomial evaluation check:
+\begin{equation*}
+    \begin{aligned}
+        [t_u]G + [\tau_u]B \stackrel{\text{?}}{=}& [z^2]V + \delta(y,z) + [u]T_1 + [u^2]T_2\\
+        [t_u]G + \cancel{[z^2\gamma + \tau_1 u + \tau_2 u^2]B} \stackrel{?}{=}& [z^2 v]G + \cancel{[z^2 \gamma]B} +[\delta(y,z)]G + \\
+        & [ut_1]G + \cancel{[u\tau_1]B} + [t_2 u^2] G + \cancel{[\tau_2 u^2]B} \\
+        [t_u]G \stackrel{?}{=}& [z^2v + \delta(y,z) + t_1u + t_2u^2]G
+    \end{aligned}
+\end{equation*}
+Which holds since $t_u = t(u) = z^2v + \delta(y,z) + t_1u + t_2u^2$. The third inner-product also holds as $t_u = \langle \mathbf{l}_u \mathbf{r}_u \rangle$.
+
+\textit{Perfect honest-verifier zero-knowledge} follows from the zero-knowledge construction of $\Pi_{zkip}$ protocol as Vertifier learns no information about $\mathbf{a}_L, \mathbf{a}_R$.
+
+\textit{Computational extended witness emulation} implies building extractor that combines extractors for two subprotocols: $\mathcal{E}_{ip}$ extracts witness ($\mathbf{l}_u, \mathbf{r}_u$) from $\Pi_{ip}$ than the extractor $\mathcal{E}_{zkip}$ extracts high-level witness ($\mathbf{a}_L, \mathbf{a}_R$) from $\Pi_{zkip} \quad \square$
+
+The proof size of \textbf{range-proof} protocol is $2 \log_2n +4$ group $\mathbb{G}$ elements and $5$ field $\mathbb{F}_p$ elements.
+\begin{remark}
+    Range proofs could be efficiently aggregated: e.g. one could prove the relation using slighly modified range proof protocol $\Pi_{rp}$
+    $$\mathcal{R}_{rpm} = \{ (G, B, \vec{V}, n; \vec{v}, \vec{\gamma}) \vert \forall i \in 1..m: V_i = [v_i]G + [\gamma_i]B, v_i \in [0, 2^n) \}$$
+    Where $\vec{v} = (v_1, v_2, \dots, v_m)$ and $\vec{\gamma} = (\gamma_1, \gamma_2, \dots, \gamma_m)$ -- respectively secrets and blinding factors. Detail explanation of aggregation protocol could be found in \href{https://eprint.iacr.org/2017/1066.pdf}{original bulletroofs paper}
+\end{remark}
+
+\begin{example}
+    One of the most famous \textit{NP-complete} problems is the \textbf{subset-sum problem}: given a set of numbers presented as vector $\mathbf{s}$ and number $v \in \mathbb{N}$, does a some subset sums up to $v$. It turns out that we could use our \textbf{range-proof} protocol for this problem. One could simply replace first inner-product check $\langle \mathbf{a_L}, \mathbf{2}^n \rangle = v$ with $\langle \mathbf{a_L}, \mathbf{s} \rangle = v$ where $\mathbf{a_L}$ is the secret vector of bits that encode positions of $\mathbf{s}$ that sum up to $v$.
+
+    For example take $\mathbf{s} = (6,8,2,3)$ and $v = 14$. Then setting $\mathbf{a_L} = (1,1,0,0)$ we could use $\Pi_{rp}$ to prove that there exists a subset of $\mathbf{s}$ that sums up to $v=14$ without disclosing that subset.
+
+    Therefore, \textbf{bulletproofs range proof} protocol is capable to prove a knowledge of witness to any $NP$-problem as they all could be reduced to the $\textbf{subset-sum problem}$
+\end{example}
 \subsection{Arithmetic circuits proofs}
+
+\textbf{Bulletproofs} presents not only range proofs, but also efficient proofs for arithmetic circuits satisfiability. As we could see before, inner-product relation is quite powerful tool and could be used to prove a knowledge of witness to any $NP$-problem. But here we present a more convinient way to compile arithmetic circuits into inner-product relation.
+
+\subsubsection{Arithmetization}
+
+\textbf{Bulletproofs} arithmetization slightly differs from the classic R1CS we studied before, however it could be transformed vice-versa easily. Also \textbf{bulletproofs} arithmetization is more convinient and human-friendly for encoding most of the arithmetic circuits than the R1CS.
 
 \subsection*{Acknowledgements}
 This section was heavily inspired by:
