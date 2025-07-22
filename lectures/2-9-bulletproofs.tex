@@ -2,13 +2,25 @@
 \usepackage{systeme}
 
 \begin{document}
+
+% --- Annotation: Snark Poem ---
+\begin{quote}
+    \small "Just the place for a Snark!" the Bellman cried,\\
+    As he landed his crew with care;\\
+ Supporting each man on the top of the tide\\
+    By a finger entwined in his hair.
+\end{quote}
+\begin{flushright}
+\small \textit{-- Lewis Carroll, "The Hunting of the Snark"}
+\end{flushright}
+
 \subsection{Introduction}
 
 \textbf{Bulletproofs} is a zero-knowledge proof protocol with logarithmically sized proofs without a trusted setup. Originally, \textbf{bulletproofs} was developed to provide efficient range proofs in application to confidential transactions, but it applies also to arbitrary arithmetic circuit (possibly encoded in R1CS). In the heart of protocol lays \textbf{inner-product argument} which we describe in details. Technically, the protocol is built in an interactive fashion (like $\Sigma$-protocols), but one could make it non-interactive with a Fiat-Shamir transform. One key feature that differs it from $\Sigma$-protocols is the number of challenges from a verifier $\mathcal{V}$ -- in $\Sigma$-protocols there is only one challenge, while \textbf{bulletproofs} implies a logarithmic in circuit size number of queries. 
 
 Also, \textbf{bulletproofs}' \textbf{inner-product argument} could be used to build various polynomial commitment schemes -- crucial building block of proving systems built with \textit{IOP} framework (\textit{Halo, Nova, etc}).
 
-The main advantages of \textbf{bulletproofs} are an absence of a trusted setup and security against eavesdropping that relies on the \textit{discrete-logarithm} assumption without any other auxiliary structures like bilinear pairings. Also it has quite fast prover for small circuits making it practically usefull for client-side proving. However, the main disadvantage of \textbf{bulletproofs} is linear in circuit size verification time though still efficient for small circuits.
+The main advantages of \textbf{bulletproofs} are an absence of a trusted setup and security against eavesdropping that relies on the \textit{discrete-logarithm} assumption without any other auxiliary structures like bilinear pairings. Also it has quite fast prover for small circuits making it practically usefull for client-side proving. However, the main disadvantage of \textbf{bulletproofs} is that it isn't a classic \textit{SNARK} due to linear in circuit size verification time, however still very efficient for small circuits.
 
 \subsection{Notation}
 Let $\mathbb{G}$ - cyclic group of prime order $p$ written additively, $\mathbf{G} = (G_1, \dots, G_n), \mathbf{H} = (H_1, \dots, H_n) \in \mathbb{G}^n$ - vectors of independent generators. We denote by $\langle \mathbf{a,b} \rangle$ - inner product of vectors $\mathbf{a} = (a_1, \dots, a_n), \mathbf{b} = (b_1, \dots, b_n) \in \mathbb{F}_p^n$ and $\langle \mathbf{a,G} \rangle = \sum_{i=1}^n [a_i] G_i \in \mathbb{G}$ - inner product of vector $\mathbf{a}$ with vector of generators $\mathbf{G}$. Denote by $\mathbf{k}^n$ vector of $k$'s first $n$ powers: $\mathbf{k}^n = (1, k, k^2, \dots, k^{n-1})$, for example $\mathbf{0}^n, \mathbf{1}^n$ represents vectors of zeros and ones respectively, while $\mathbf{2}^{n} = (1, 2, 4, \dots, 2^{n-1})$
@@ -769,6 +781,288 @@ The proof size of \textbf{range-proof} protocol is $2 \log_2n +4$ group $\mathbb
 \subsubsection{Arithmetization}
 
 \textbf{Bulletproofs} arithmetization slightly differs from the classic R1CS we studied before, however it could be transformed vice-versa easily. Also \textbf{bulletproofs} arithmetization is more convinient and human-friendly for encoding most of the arithmetic circuits than the R1CS.
+
+There are two types of variables in \textit{bulletproofs} constraint system: \textit{low-level} and \textit{high-level}. Typycally \textit{high-level} variables are provided with Pedersen commitments $\mathbf{V} \in \mathbb{G}^m$ as the private witness inputs $\mathbf{v} \in \mathbb{F}_p^m$ to the circuit, while \textit{low-level} variables $\mathbf{a_L}, \mathbf{a_R}, \mathbf{a_O} \in \mathbb{F}_p^n$ are the intermediate witness values of computation. We will define circuit as a set of multiplication constraints operating with \textit{low-level} variables and set of linear constraints which links \textit{low-level} variables between each other and \textit{high-level} variables as well.
+
+Multiplication constraints are defined with one vector equation:
+$$ \mathbf{a_L} \circ \mathbf{a_R} = \mathbf{a_O} $$
+
+Linear constraints are defined via:
+$$ \mathbf{W}_L \cdot \mathbf{a_L} + \mathbf{W}_R \cdot \mathbf{a_R} + \mathbf{W}_O \cdot \mathbf{a_O} = \mathbf{W}_V \cdot \mathbf{v} + \mathbf{c} $$
+
+Where $\mathbf{a_L, a_R, a_O}$ -- vectors of left and right inputs for multiplication gates and output values (all of them are low-level variables). $\mathbf{W_L, W_R, W_O} \in \mathbb{F}_p^{q \times n}, \mathbf{W}_V \in \mathbb{F}_p^{q \times m}$ -- public matrices of weights for linear constraints(obviously known to verifier). $\mathbf{c} \in \mathbb{F}_p^q$ -- public vector of constants. Typycally they encode wiring of the circuit and other linear relations between variables.
+
+\begin{example}
+    Consider the following elliptic curve membership circuit. Here witness $(v_1, v_2)$ should satisfy elliptic curve equation:
+    \begin{equation*}
+        y^2 = x^3 + ax + b
+    \end{equation*}
+    
+    The arithmetization for this circuit is as follows:
+    
+    \textbf{Low-level variables:}
+    \begin{equation*}
+        \mathbf{a_L} = \begin{bmatrix} x \\ x \\ y \end{bmatrix}, \quad 
+        \mathbf{a_R} = \begin{bmatrix} x \\ x^2 \\ y \end{bmatrix}, \quad 
+        \mathbf{a_O} = \begin{bmatrix} x^2\\x^3 \\ y^2 \end{bmatrix}
+    \end{equation*}
+    
+    \textbf{High-level variables:}
+    \begin{equation*}
+        \mathbf{v} = \begin{bmatrix} v_1 \\ v_2 \end{bmatrix}
+    \end{equation*}
+    
+    \textbf{Multiplication constraints:}
+    \begin{equation*}
+        \mathbf{a_L} \circ \mathbf{a_R} = \mathbf{a_O} \Rightarrow \begin{bmatrix} 
+            x \cdot x = x^2 \\
+            x \cdot x^2 = x^3 \\ 
+            y \cdot y = y^2
+        \end{bmatrix}
+    \end{equation*}
+    
+    \textbf{Linear constraints:}
+
+    \begin{equation*}
+        \begin{aligned}
+            \mathbf{a_L}^{(1)} &= v_1 \\
+            \mathbf{a_R}^{(1)} &= v_1 \\
+            \mathbf{a_L}^{(2)} - \mathbf{a_L}^{(1)} &= 0 \\
+            \mathbf{a_R}^{(2)} - \mathbf{a_O}^{(1)} &= 0 \\
+            \mathbf{a_L}^{(3)} &= v_2 \\
+            \mathbf{a_R}^{(3)} &= v_2 \\
+            \mathbf{a_O}^{(3)} - \mathbf{a_O}^{(2)} - a \cdot \mathbf{a_L}^{(1)} &= b
+        \end{aligned}
+    \end{equation*}
+    
+    \begin{equation*}
+    \mathbf{W}_L \cdot \mathbf{a_L} + \mathbf{W}_R \cdot \mathbf{a_R} + \mathbf{W}_O \cdot \mathbf{a_O} = \mathbf{W}_V \cdot \mathbf{v} + \mathbf{c}
+    \end{equation*}
+    
+    Where:
+    \begin{align*}
+    \mathbf{W}_L = \begin{bmatrix}
+        1 & 0 & 0 \\
+        0 & 0 & 0 \\
+        -1 & 1 & 0 \\
+        0 & 0 & 0 \\
+        0 & 0 & 1 \\
+        0 & 0 & 0 \\
+        -a & 0 & 0
+    \end{bmatrix},\quad
+    \mathbf{W}_R = \begin{bmatrix}
+        0 & 0 & 0 \\
+        1 & 0 & 0 \\
+        0 & 0 & 0 \\
+        0 & 1 & 0 \\
+        0 & 0 & 0 \\
+        0 & 0 & 1 \\
+        0 & 0 & 0
+    \end{bmatrix},\quad
+    \mathbf{W}_O = \begin{bmatrix}
+        0 & 0 & 0 \\
+        0 & 0 & 0 \\
+        0 & 0 & 0 \\
+        -1 & 0 & 0 \\
+        0 & 0 & 0 \\
+        0 & 0 & 0 \\
+        0 & -1 & 1
+    \end{bmatrix},\\
+    \mathbf{W}_V = \begin{bmatrix}
+        1 & 0 \\
+        1 & 0 \\
+        0 & 0 \\
+        0 & 0 \\
+        0 & 1 \\
+        0 & 1 \\
+        0 & 0
+    \end{bmatrix},\quad
+    \mathbf{c} = \begin{bmatrix}
+        0 \\ 0 \\ 0 \\ 0 \\ 0 \\ 0 \\ b
+    \end{bmatrix}
+\end{align*}
+    
+
+
+
+\textbf{Classic R1CS arithmetization:}
+
+We can also represent the same circuit using the classic R1CS formalism:
+\[
+(A \cdot \mathbf{w}) \circ (B \cdot \mathbf{w}) = (C \cdot \mathbf{w})
+\]
+where $\mathbf{w}$ is extended witness vector $\mathbf{w} = (1, x, y, x^2, x^3, y^2)$
+
+The R1CS constraints for the circuit $y^2 = x^3 + a x + b$ are:
+\[
+\begin{array}{rl}
+\text{Constraint 1:} & x \times x = x^2 \\
+\text{Constraint 2:} & x^2 \times x = x^3 \\
+\text{Constraint 3:} & y \times y = y^2 \\
+\text{Constraint 4:} & x^3 + a x + b = y^2
+\end{array}
+\]
+
+Explicitly, the R1CS matrices are:
+\[
+A = \begin{bmatrix}
+0 & 1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 1 & 0 & 0 \\
+0 & 0 & 1 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 1 & 0 \\
+\end{bmatrix}
+\]
+\[
+B = \begin{bmatrix}
+0 & 1 & 0 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 1 & 0 & 0 & 0 \\
+1 & a & 0 & 0 & 0 & 0 \\
+\end{bmatrix}
+\]
+\[
+C = \begin{bmatrix}
+0 & 0 & 0 & 1 & 0 & 0 \\
+0 & 0 & 0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 0 & 0 & 1 \\
+0 & 0 & 0 & 0 & 0 & 1 \\
+\end{bmatrix}
+\]
+\end{example}
+
+We could use similar to \textit{range-proofs} technique to transform constraints of the circuit into inner-product relation. For multiplicative constraints take random $y \in \mathbb{F}_p$ and apply zero check:
+$$ \langle \mathbf{a_L} \circ \mathbf{a_R} - \mathbf{a_O}, \mathbf{y}^n \rangle = 0$$
+
+Do the same for linear constraints, but for different randomness $z \in \mathbb{F}_p$:
+$$ \langle \mathbf{W}_L \cdot \mathbf{a_L} + \mathbf{W}_R \cdot \mathbf{a_R} + \mathbf{W}_O \cdot \mathbf{a_O} - \mathbf{W}_V \cdot \mathbf{v} - \mathbf{c}, \mathbf{z}^q \rangle = 0$$
+
+Combine this two checks to one using the same randomness $z$:
+\begin{equation*}
+    \begin{aligned}
+        \langle \mathbf{a_L} \circ \mathbf{a_R} - \mathbf{a_O}, \mathbf{y}^n \rangle + z \cdot \langle \mathbf{W}_L \cdot \mathbf{a_L} + \mathbf{W}_R \cdot \mathbf{a_R} + \mathbf{W}_O \cdot \mathbf{a_O} - \mathbf{W}_V \cdot \mathbf{v} - \mathbf{c}, \mathbf{z}^q \rangle = 0 \\
+        \langle \mathbf{a_L} \circ \mathbf{a_R} - \mathbf{a_O}, \mathbf{y}^n \rangle + \langle z \cdot \mathbf{z}^q,  \mathbf{W}_L \cdot \mathbf{a_L} + \mathbf{W}_R \cdot \mathbf{a_R} + \mathbf{W}_O \cdot \mathbf{a_O} - \mathbf{W}_V \cdot \mathbf{v} - \mathbf{c} \rangle = 0
+    \end{aligned}
+\end{equation*}
+
+This check is sound as typically a prover could not control values of $y,z$ before he commits to $\mathbf{a_L, a_R, a_O}$ and $\mathbf{v}$.
+
+Then split the second inner product and factor-out public terms to RHS:
+\begin{equation*}
+    \begin{aligned}
+        \langle \mathbf{a_L} \circ \mathbf{a_R} - \mathbf{a_O}, \mathbf{y}^n \rangle + \langle z \cdot \mathbf{z}^q, \mathbf{W}_L \cdot \mathbf{a_L} \rangle + \langle z \cdot \mathbf{z}^q, \mathbf{W}_R \cdot \mathbf{a_R} \rangle + \langle z \cdot \mathbf{z}^q, \mathbf{W}_O \cdot \mathbf{a_O} \rangle \\ 
+        - \langle z \cdot \mathbf{z}^q, \mathbf{W}_V \cdot \mathbf{v} \rangle - \langle z \cdot \mathbf{z}^q, \mathbf{c} \rangle = 0 \\
+        \langle \mathbf{a_L} \circ \mathbf{a_R} - \mathbf{a_O}, \mathbf{y}^n \rangle + \langle z \cdot \mathbf{z}^q, \mathbf{W}_L \cdot \mathbf{a_L} \rangle + \langle z \cdot \mathbf{z}^q, \mathbf{W}_R \cdot \mathbf{a_R} \rangle + \langle z \cdot \mathbf{z}^q, \mathbf{W}_O \cdot \mathbf{a_O} \rangle \\ 
+        - \langle z \cdot \mathbf{z}^q, \mathbf{W}_V \cdot \mathbf{v} \rangle = \langle z \cdot \mathbf{z}^q, \mathbf{c} \rangle
+    \end{aligned}
+\end{equation*}
+
+Applying conjugation rule(if $A$ -- linear operator and $A^T$ -- its transpose(conjugate) then $\langle \mathbf{a}, A \mathbf{b} \rangle = \langle A^T \mathbf{a}, \mathbf{b} \rangle$) to the second inner product we get:
+\begin{equation*}
+    \begin{aligned}
+        \langle \mathbf{a_L} \circ \mathbf{a_R} - \mathbf{a_O}, \mathbf{y}^n \rangle + \langle \mathbf{W}_L^T \cdot (z \cdot \mathbf{z}^q), \mathbf{a_L} \rangle + \langle \mathbf{W}_R^T \cdot (z \cdot \mathbf{z}^q), \mathbf{a_R} \rangle + \\
+        \langle \mathbf{W}_O^T \cdot (z \cdot \mathbf{z}^q), \mathbf{a_O} \rangle - \langle \mathbf{W}_V^T \cdot (z \cdot \mathbf{z}^q), \mathbf{v} \rangle = \langle z \cdot \mathbf{z}^q, \mathbf{c} \rangle
+    \end{aligned}
+\end{equation*}
+
+Denote $w_c = \langle z \cdot \mathbf{z}^q, \mathbf{c} \rangle$ and flattened linear constraints(still public and easily computed by verifier):
+\begin{equation*}
+    \begin{aligned}
+        \mathbf{w}_L = \mathbf{W}_L^T \cdot (z \cdot \mathbf{z}^q) \\
+        \mathbf{w}_R = \mathbf{W}_R^T \cdot (z \cdot \mathbf{z}^q) \\
+        \mathbf{w}_O = \mathbf{W}_O^T \cdot (z \cdot \mathbf{z}^q) \\
+        \mathbf{w}_V = \mathbf{W}_V^T \cdot (z \cdot \mathbf{z}^q) \\
+    \end{aligned}
+\end{equation*}
+
+Now we could finally rewrite the equation as:
+\begin{equation*}
+    \begin{aligned}
+        \langle \mathbf{a_L} \circ \mathbf{a_R} - \mathbf{a_O}, \mathbf{y}^n \rangle + \langle \mathbf{w}_L, \mathbf{a_L} \rangle + \langle \mathbf{w}_R, \mathbf{a_R} \rangle + \langle \mathbf{w}_O, \mathbf{a_O} \rangle - \langle \mathbf{w}_V, \mathbf{v} \rangle = w_c
+    \end{aligned}
+\end{equation*}
+
+Then rearrange and combine terms so that $\mathbf{a_L}$, $\mathbf{a_O}$ be on the left side and $\mathbf{a_R}$ on the right side:
+\begin{equation*}
+    \begin{aligned}
+        \langle \mathbf{a_L} \circ \mathbf{a_R}, \mathbf{y}^n \rangle - \langle \mathbf{a_O}, \mathbf{y}^n \rangle + \langle \mathbf{w}_L, \mathbf{a_L} \rangle + \langle \mathbf{w}_R, \mathbf{a_R} \rangle + \langle \mathbf{w}_O, \mathbf{a_O} \rangle = \langle \mathbf{w}_V, \mathbf{v} \rangle + w_c \\
+        \langle \mathbf{a_L}, \mathbf{y}^n \circ \mathbf{a_R} \rangle + \langle \mathbf{a_O}, - \mathbf{y}^n + \mathbf{w}_O \rangle + \langle \mathbf{w}_L, \mathbf{a_L} \rangle + \langle \mathbf{w}_R, \mathbf{a_R} \rangle = \langle \mathbf{w}_V, \mathbf{v} \rangle + w_c \\
+        \langle \mathbf{a_L}, \mathbf{y}^n \circ \mathbf{a_R} \rangle + \langle \mathbf{a_O}, - \mathbf{y}^n + \mathbf{w}_O \rangle + \langle \mathbf{w}_L, \mathbf{a_L} \rangle + \langle \mathbf{y}^n \circ \mathbf{a}_R, \mathbf{y}^{-n} \circ \mathbf{w_R} \rangle = \langle \mathbf{w}_V, \mathbf{v} \rangle + w_c \\
+        \langle \mathbf{a_L} + \mathbf{y}^{-n} \circ \mathbf{w_R}, \mathbf{y}^n \circ \mathbf{a_R} \rangle + \langle \mathbf{a_O}, - \mathbf{y}^n + \mathbf{w}_O \rangle + \langle \mathbf{w}_L, \mathbf{a_L} \rangle = \langle \mathbf{w}_V, \mathbf{v} \rangle + w_c \\
+    \end{aligned}
+\end{equation*}
+
+Add $\delta(y, z) = \langle \mathbf{y}^{-n} \circ \mathbf{w}_R, \mathbf{w}_L \rangle $ to both sides:
+$$
+\begin{aligned}
+w_c + \langle \mathbf{w}_V, \mathbf{v} \rangle +
+\delta(y, z) = \langle \mathbf{a}_L + \mathbf{y}^{-n} \circ \mathbf{w}_R, \mathbf{y}^n \circ \mathbf{a}_R \rangle + \langle \mathbf{a}_L, \mathbf{w}_L \rangle +\\
+\langle \mathbf{a}_O, -\mathbf{y}^n + \mathbf{w}_O \rangle + 
+\langle \mathbf{y}^{-n} \circ \mathbf{w}_R, \mathbf{w}_L \rangle\\
+w_c + \langle \mathbf{w}_V, \mathbf{v} \rangle + \delta(y, z)
+    = \langle \mathbf{a}_L + \mathbf{y}^{-n} \circ \mathbf{w}_R, 
+    \mathbf{y}^n \circ \mathbf{a}_R \rangle + 
+    \langle \mathbf{a}_L + \mathbf{y}^{-n} \circ \mathbf{w}_R,
+    \mathbf{w}_L \rangle + \\
+    \langle \mathbf{a}_O, 
+    -\mathbf{y}^n + \mathbf{w}_O \rangle \\
+    w_c + \langle \mathbf{w}_V, \mathbf{v} \rangle + \delta(y, z) =
+\langle \mathbf{a}_L + \mathbf{y}^{-n} \circ \mathbf{w}_R, 
+\mathbf{y}^n \circ \mathbf{a}_R +
+\mathbf{w}_L \rangle +
+\langle \mathbf{a}_O, 
+-\mathbf{y}^n + \mathbf{w}_O \rangle
+\end{aligned}
+$$
+Now it seems we are stuck as there is two separate inner products so one could not simply linearly blind witness parts, multiply corresponding polynomials and obtain desired inner product in constant term just as we did in the \textit{range-proof} case. But fortunately we could take polynomials of higher degree and obtain desired sum of inner-products as some coefficient of the product of polynomials:
+\begin{equation}
+    \langle \mathbf{a}x + \mathbf{c}x^2, \mathbf{d} + \mathbf{b}x \rangle = s_1x + s_2x^2 + s_3x^3 = x \cdot \langle \mathbf{a}, \mathbf{d} \rangle + x^2 \cdot (\langle \mathbf{a}, \mathbf{b} \rangle + \langle \mathbf{c}, \mathbf{d} \rangle) + x^3 \cdot \langle \mathbf{c}, \mathbf{b} \rangle
+    \label{eq:inner-product-circuit-1}
+\end{equation}
+So take:
+\begin{equation}
+    \begin{aligned}
+    &\mathbf{a} \gets \mathbf{a}_L + \mathbf{y}^{-n} \circ \mathbf{w}_R &&\mathbf{b} \gets \mathbf{y}^n \circ \mathbf{a}_R + \mathbf{w}_L \\
+    &\mathbf{c} \gets \mathbf{a}_O &&\mathbf{d} \gets -\mathbf{y}^n + \mathbf{w}_O
+    \end{aligned}
+    \label{eq:inner-product-circuit-assignment}
+\end{equation}
+So than we could get desired sum of inner products as the second-degree coefficient $s_2$:
+$$ w_c + \langle \mathbf{w}_V, \mathbf{v} \rangle + \delta(y, z) = s_2$$
+In order to obtain final polynimials $\mathbf{l}(x), \mathbf{r}(x)$ we must firstly blind $\mathbf{a_L}, \mathbf{a_R}$:
+\begin{equation}
+    \begin{aligned}
+    \mathbf{a_L} \gets \mathbf{a_L} + \mathbf{s_L}x^2 && \mathbf{a_R} \gets \mathbf{a_R} + \mathbf{s_R}x^2
+    \end{aligned}
+    \label{eq:inner-product-circuit-blinding}
+\end{equation}
+\begin{remark}
+    We multiplied blinders $\mathbf{s_L}, \mathbf{s_R}$ with the second power of challenge $x^2$ because we want the blinding terms to do not interfere with other parts of inner-product.
+
+    $\mathbf{a_O}$ does not need separate blinding as it's located on the left side of the inner-product (\ref{eq:inner-product-circuit-1}) along with $\mathbf{a_L}$, which is already blinded by $\mathbf{s_L}$.
+\end{remark}
+
+Now we could compute polynomials $\mathbf{l}(x), \mathbf{r}(x)$ from (\ref{eq:inner-product-circuit-1}) using assignments from (\ref{eq:inner-product-circuit-assignment}) and blindings from (\ref{eq:inner-product-circuit-blinding}):
+\begin{equation}
+    \begin{aligned}
+        {\mathbf{l}}(x) &= (\mathbf{a}_L + \mathbf{s}_L \cdot x^2) \cdot x + \mathbf{y}^{-n} \circ \mathbf{w}_R \cdot x + \mathbf{a}_O \cdot x^2 \\
+                  &= \mathbf{a}_L \cdot x + \mathbf{s}_L \cdot x^3 + \mathbf{y}^{-n} \circ \mathbf{w}_R \cdot x + \mathbf{a}_O \cdot x^2 \\
+                  &= \mathbf{s}_L \cdot x^3 + \mathbf{a}_O \cdot x^2 + (\mathbf{a}_L + \mathbf{y}^{-n} \circ \mathbf{w}_R) \cdot x \\
+        {\mathbf{r}}(x) &= \mathbf{y}^n \circ (\mathbf{a}_R + \mathbf{s}_R \cdot x^2) \cdot x + \mathbf{w}_L \cdot x - \mathbf{y}^n + \mathbf{w}_O \\
+                  &= \mathbf{y}^n \circ \mathbf{a}_R \cdot x + \mathbf{y}^n \circ \mathbf{s}_R \cdot x^3 + \mathbf{w}_L \cdot x - \mathbf{y}^n + \mathbf{w}_O \\
+                  &= \mathbf{y}^n \circ \mathbf{s}_R \cdot x^3 + (\mathbf{y}^n \circ \mathbf{a}_R +  \mathbf{w}_L) \cdot x - \mathbf{y}^n + \mathbf{w}_O
+    \end{aligned}
+    \label{eq:inner-product-circuit-polynomials}
+\end{equation}
+
+Now we could compute the polynomial $t(x) = \langle \mathbf{l}(x), \mathbf{r}(x) \rangle$:
+\begin{equation}
+    \begin{aligned}
+        t(x) &= \langle \mathbf{l}(x), \mathbf{r}(x) \rangle = t_1 x + t_2 x^2 + t_3 x^3 + t_4 x^4 + t_5 x^5 + t_6 x^6 = \sum_{i=1}^{6} t_i x^i \\
+        t_1 &= \langle \mathbf{a}_L + \mathbf{y}^{-n} \circ \mathbf{w}_R, - \mathbf{y}^n + \mathbf{w}_O \rangle
+    \end{aligned}
+    \label{eq:inner-product-circuit-polynomials-product}
+\end{equation}
+
 
 \subsection*{Acknowledgements}
 This section was heavily inspired by:
