@@ -1006,11 +1006,7 @@ w_c + \langle \mathbf{w}_V, \mathbf{v} \rangle + \delta(y, z)
     \langle \mathbf{a}_O, 
     -\mathbf{y}^n + \mathbf{w}_O \rangle \\
     w_c + \langle \mathbf{w}_V, \mathbf{v} \rangle + \delta(y, z) =
-\langle \mathbf{a}_L + \mathbf{y}^{-n} \circ \mathbf{w}_R, 
-\mathbf{y}^n \circ \mathbf{a}_R +
-\mathbf{w}_L \rangle +
-\langle \mathbf{a}_O, 
--\mathbf{y}^n + \mathbf{w}_O \rangle
+\langle \mathbf{a}_L + \mathbf{y}^{-n} \circ \mathbf{w}_R, \mathbf{y}^n \circ \mathbf{a}_R + \mathbf{w}_L \rangle + \langle \mathbf{a}_O, -\mathbf{y}^n + \mathbf{w}_O \rangle
 \end{aligned}
 $$
 Now it seems we are stuck as there is two separate inner products so one could not simply linearly blind witness parts, multiply corresponding polynomials and obtain desired inner product in constant term just as we did in the \textit{range-proof} case. But fortunately we could take polynomials of higher degree and obtain desired sum of inner-products as some coefficient of the product of polynomials:
@@ -1058,7 +1054,12 @@ Now we could compute the polynomial $t(x) = \langle \mathbf{l}(x), \mathbf{r}(x)
 \begin{equation}
     \begin{aligned}
         t(x) &= \langle \mathbf{l}(x), \mathbf{r}(x) \rangle = t_1 x + t_2 x^2 + t_3 x^3 + t_4 x^4 + t_5 x^5 + t_6 x^6 = \sum_{i=1}^{6} t_i x^i \\
-        t_1 &= \langle \mathbf{a}_L + \mathbf{y}^{-n} \circ \mathbf{w}_R, - \mathbf{y}^n + \mathbf{w}_O \rangle
+        t_1 &= \langle \mathbf{a}_L + \mathbf{y}^{-n} \circ \mathbf{w}_R, - \mathbf{y}^n + \mathbf{w}_O \rangle \\
+        t_2 &= \langle \mathbf{a}_L + \mathbf{y}^{-n} \circ \mathbf{w}_R, \mathbf{y}^n \circ \mathbf{a}_R + \mathbf{w}_L \rangle + \langle \mathbf{a}_O, -\mathbf{y}^n + \mathbf{w}_O \rangle = w_c + \langle \mathbf{w}_V, \mathbf{v} \rangle + \delta(y, z) \\
+        t_3 &= \langle \mathbf{s}_L, - \mathbf{y}^n + \mathbf{w}_O \rangle + \langle \mathbf{a}_O, \mathbf{y}^n \circ \mathbf{a}_R + \mathbf{w}_L \rangle \\
+        t_4 &= \langle \mathbf{s}_L, \mathbf{y}^n \circ \mathbf{a}_R +  \mathbf{w}_L \rangle + \langle \mathbf{a}_L + \mathbf{y}^{-n} \circ \mathbf{w}_R, \mathbf{y}^n \circ \mathbf{s}_R \rangle \\
+        t_5 &= \langle \mathbf{a}_O, \mathbf{y}^n \circ \mathbf{s}_R \rangle \\
+        t_6 &= \langle \mathbf{s}_L, \mathbf{y}^n \circ \mathbf{s}_R \rangle
     \end{aligned}
     \label{eq:inner-product-circuit-polynomials-product}
 \end{equation}
