@@ -167,21 +167,24 @@ We could optimize our \textbf{polynomial multiplication protocol} furthermore. N
 \end{theorem}
 \textbf{Proof}. We left to a reader proof of the theorem in the sake of brevity because it's very similar to the proof of \Cref{th:poly_mul_naive} $\quad \square$
 
+\subsubsection{Zero-knowledge multiplication protocol}
 
-Finally, We could easily build the protocol for the zk-multiplication relation: $$\mathcal{R}_{abc} = \{ ;c,a,b \vert c=ab \}$$
+Finally, we could easily build the protocol for the zk-multiplication relation where each witness element presented in statement as a Pedersen commitment: 
+$$\mathcal{R}_{abc} = \left\{\begin{array}{l}
+    (G,H,B,A,T_0;a,b, \alpha, \tau_0) \vert \\
+    A = [a]G + [b]H + [\alpha]B \wedge \\
+    T_0 = [ab]G + [\tau_0]B 
+\end{array}\right\}$$
+Where $G,H,B \in \mathbb{G}$ are generators with unknown discrete log relations, $A \in \mathbb{G}$ is a Pedersen commitment to $a,b$ and $T_0 \in \mathbb{G}$ is a Pedersen commitment to their product $ab$.
 
 \begin{definition}
-    The \textbf{multiplication protocol} $\Pi_{abc} = (\mathsf{Setup}, \mathcal{P,V})$ for the relation $\mathcal{R}_{abc}$ with prover $\mathcal{P}$ and verifier $\mathcal{V}$ is defined as follows:
+    The \textbf{multiplication protocol} $\Pi_{abc} = (\mathcal{P,V})$ for the relation $\mathcal{R}_{abc}$ with prover $\mathcal{P}$ and verifier $\mathcal{V}$ is defined as follows:
     \begin{itemize}
-        \item $\mathsf{Setup}$ returns triple of group generators with unknown discrete log relations $G, H, B \in \mathbb{G}$
-        \item Parties $\mathcal{P, V}$ run the following protocol:
-            \begin{itemize}
-                \item Prover $\mathcal{P}$ draws random $s_L, s_R \xleftarrow{R} \mathbb{F}_p$ and defines polynomials: $$l(x)=a+s_L x,\quad r(x)=b+s_R x,\quad t(x)=l(x)r(x)$$
-                \item Parties run $\Pi_{mul}$ on inputs $(l(x),r(x),t(x))$
-            \end{itemize}
+        \item Prover $\mathcal{P}$ draws random $s_L, s_R \xleftarrow{R} \mathbb{F}_p$ and defines polynomials: $$l(x)=a+s_L x,\quad r(x)=b+s_R x,\quad t(x)=l(x)r(x)$$
+        \item Parties run $\Pi_{mul}$ on inputs $(l(x),r(x),t(x))$ along with provided a-priori setup $G,H,B \in \mathbb{G}$ and commitments $A, T_0$
     \end{itemize}
 \end{definition}
-Here we refer to $A$ as a Pedersen commitment to $a,b$ and $T_0$ as a Pedersen commitment to their product which could be given to verifier before start of the protocol. The protocol obviously has \textit{perfect completeness, special soundness, perfect honest-verifier zero-knowledge} due to the \Cref{th:poly_mul}.
+The protocol obviously has \textit{perfect completeness, special soundness, perfect honest-verifier zero-knowledge} due to the \Cref{th:poly_mul}.
 
 \begin{remark} %todo: add reference for Chaum-Pedersen
     Now curious reader may wonder why build so overwhelmingly complicated protocol for simple multiplication and not just use classic \textit{Chaum-Pedersen protocol} for DH-triplets? Indeed, it definitely could establish that for given group elements $[a]G, [b]G, [c]G$ equality $c=ab$ holds, but unfortunatelly commitments $[a]G, [b]G, [c]G$ do not have a \textit{binding} property (though preserving hiding property) so they're almost useless for building more complex protocols where the prover usually needs to bind to specific values without having an ability to silently modify them.
@@ -215,8 +218,9 @@ So the constant term is the inner-product $\langle \mathbf{a}, \mathbf{b} \rangl
 \begin{definition}
     The \textbf{zero-knowledge inner-product protocol} $\Pi_{zkip} = (\mathcal{P,V})$ for the relation 
     \begin{align*}
-        \mathcal{R}_{zkip} = \{ (\mathbf{G,H},G,B,A,V;\mathbf{a,b},\alpha, \gamma) \vert & A = \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle + [\alpha] B, \\ &V = [\langle \mathbf{a,b} \rangle]G + [\gamma]B \}
-    \end{align*} where $\mathbf{G,H} \in \mathbb{G}^n, G,B \in \mathbb{G}$ -- independent group generators with prover $\mathcal{P}$ and verifier $\mathcal{V}$ is defined as follows:
+        \mathcal{R}_{zkip} = \left\{ \begin{aligned} (\mathbf{G,H},G,B,A,V;\mathbf{a,b},\alpha, \gamma) \vert & A = \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle + [\alpha] B, \\ & V = [\langle \mathbf{a,b} \rangle]G + [\gamma]B \end{aligned} \right\}
+    \end{align*} 
+    where $\mathbf{G,H} \in \mathbb{G}^n, G,B \in \mathbb{G}$ -- independent group generators with prover $\mathcal{P}$ and verifier $\mathcal{V}$ is defined as follows:
 
     \begin{itemize}
         \item Prover $\mathcal{P}$ choses blinding vectors $\mathbf{s}_L, \mathbf{s}_R \in \mathbb{F}_p^n$ and computes polynomials:

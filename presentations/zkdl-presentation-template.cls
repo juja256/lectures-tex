@@ -10,7 +10,7 @@
 \usepackage[english]{babel}
 
 % --- Listing settings ---
-\RequirePackage{listings, ../listings-circom}
+%^\RequirePackage{listings, ../listings-circom}
 
 % --- Algorithm packages ---
 \RequirePackage[
