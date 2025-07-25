@@ -76,7 +76,7 @@ During $\mathsf{Setup}$ parties agree on group elements $G,B \in \mathbb{G}$. Af
         \end{equation}
 \end{itemize}
 \begin{theorem}
-    Naїve \textbf{polynomial multiplication} protocol $\Pi'_{mul}$ has \textit{perfect completeness, special soundness, perfect honest-verifier zero-knowledge}
+    Naїve \textbf{polynomial multiplication} protocol $\Pi'_{mul}$ has \textit{perfect completeness, 3-special soundness, perfect honest-verifier zero-knowledge}
     \label{th:poly_mul_naive}
 \end{theorem}
 \textbf{Proof idea.} \textit{Perfect completeness} holds due to:
@@ -98,9 +98,9 @@ During $\mathsf{Setup}$ parties agree on group elements $G,B \in \mathbb{G}$. Af
 
 Proving \textit{honest-verifier zero-knowledge} is a bit complicated due to proper building of a simulator and proving indistinguishability of distributions, so we briefly describe the idea behind it: each commitment sent in the first phase by $\mathcal{P}$ is a Pedersen commitment which is hiding by design, every second phase response of $\mathcal{P}$ is an evaluation of some first or second degree polynomial at chosen point so there's not enough information for interpolation and polynomial reconstruction, moreover it could be easily simulated.
 
-To prove \textit{special soundness} we need to build a knowledge extractor $\mathcal{E}$: 
+To prove \textit{3-special soundness} we need to build a knowledge extractor $\mathcal{E}$ which extracts knowledge of witness polynomials $l(x), r(x), t(x)$ such that $l(x)r(x) = t(x)$ using 3 accepting transcripts: 
 \begin{enumerate}
-    \item $\mathcal{E}$ runs $\mathcal{P}$ to the end and rewinds back the second phase of $\mathcal{P}$, getting two non-equal challenges $u_1, u_2 \in \mathbb{F}_p$ and two prover responses $(l_{u_1}, r_{u_1}), (l_{u_2}, r_{u_2})$
+    \item $\mathcal{E}$ runs $\mathcal{P}$ to the end and rewinds back the second phase of $\mathcal{P}$, getting three non-equal challenges $u_1, u_2, u_3 \in \mathbb{F}_p$ and three prover responses $(l_{u_i}, r_{u_i}, t_{u_i})_{i=1}^3$
     \item $\mathcal{E}$ solves the following systems of linear equations:
     \begin{equation*}
         \begin{cases}
@@ -112,8 +112,15 @@ To prove \textit{special soundness} we need to build a knowledge extractor $\mat
             r_{u_1} = b + s_R u_1 \\
             r_{u_2} = b + s_R u_2
         \end{cases}
+        \qquad
+        \begin{cases}
+            t_{u_1} = t_0 + t_1 u_1 + t_2 u_1^2 \\
+            t_{u_2} = t_0 + t_1 u_2 + t_2 u_2^2 \\
+            t_{u_3} = t_0 + t_1 u_3 + t_2 u_3^2
+        \end{cases}
     \end{equation*}
-    and gets the coefficients of witness polynomials: $(a, s_L, b, s_R) \quad \square$
+    and gets the coefficients of witness polynomials: $(a, s_L, b, s_R, t_0, t_1, t_2)$
+    \item To prove that $l(x)r(x) = t(x)$ we apply Schwartz-Zippel lemma which asserts polynomial equality with high probability since for random challenges $u_i$ for honest prover we have $l(u_i)r(u_i) = t(u_i) \quad \square$.
 \end{enumerate}
 
 \subsubsection{Optimized polynomial multiplication protocol}
