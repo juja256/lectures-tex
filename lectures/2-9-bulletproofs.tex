@@ -1,5 +1,4 @@
 \documentclass[../lecture-notes-148x210.tex]{subfiles}
-\usepackage{systeme}
 
 \begin{document}
 
@@ -16,7 +15,7 @@
 
 \subsection{Introduction}
 
-\textbf{Bulletproofs} is a zero-knowledge proof protocol with logarithmically sized proofs without a trusted setup. Originally, \textbf{bulletproofs} was developed to provide efficient range proofs in application to confidential transactions, but it applies also to arbitrary arithmetic circuit (possibly encoded in R1CS). In the heart of protocol lays \textbf{inner-product argument} which we describe in details. Technically, the protocol is built in an interactive fashion (like $\Sigma$-protocols), but one could make it non-interactive with a Fiat-Shamir transform. One key feature that differs it from $\Sigma$-protocols is the number of challenges from a verifier $\mathcal{V}$ -- in $\Sigma$-protocols there is only one challenge, while \textbf{bulletproofs} implies a logarithmic in circuit size number of queries. 
+\textbf{Bulletproofs} is a zero-knowledge proof protocol with logarithmically sized proofs without a trusted setup. Originally, \textbf{bulletproofs} was developed to provide efficient range proofs in application to confidential transactions, but it applies also to arbitrary arithmetic circuit (possibly encoded in R1CS). In the heart of protocol lays \textbf{inner-product argument} which we describe in details. Technically, the protocol is built in an interactive fashion (like $\Sigma$-protocols from \Cref{section:sigma}), but one could make it non-interactive with a Fiat-Shamir transform. One key feature that differs it from $\Sigma$-protocols is the number of challenges from a verifier $\mathcal{V}$ -- in $\Sigma$-protocols there is only one challenge, while \textbf{bulletproofs} implies a logarithmic in circuit size number of queries. 
 
 Also, \textbf{bulletproofs}' \textbf{inner-product argument} could be used to build various polynomial commitment schemes -- crucial building block of proving systems built with \textit{IOP} framework (\textit{Halo, Nova, etc}).
 
@@ -30,7 +29,7 @@ Let $a,b,c \in \mathbb{F}_p$. Here we build a zero-knowledge protocol for relati
 
 Consider the first-degree polynomials $l(x) = a + s_L x, r(x) = b + s_R x \in \mathbb{F}_p[x]$. Let $t(x) = l(x)r(x)$ and relation 
 $$\mathcal{R}_{mul} = \{ (\bot;l(x),r(x),t(x)) \vert t(x) = l(x)r(x)\}$$
-Firstly, observe that proving $t(x) = l(x)r(x)$ may be reduced to evaluation check at some challenge point $u \in \mathbb{F}_p$: $t(u) = l(u)r(u)$, due to the \textit{Schwartz-Zippel lemma}: 
+Firstly, observe that proving $t(x) = l(x)r(x)$ may be reduced to evaluation check at some challenge point $u \in \mathbb{F}_p$: $t(u) = l(u)r(u)$, due to the \textit{Schwartz-Zippel lemma}(\Cref{lemma:one-sz}): 
 $$\mathsf{Pr}[l(u)r(u) = t(u) \vert l(x)r(x) \neq t(x)] \le \frac{max(\deg(l(x)r(x)), \deg(t(x)))}{p} = \frac{2}{p}$$
 is typically negligible function from security level which makes this check \textit{sound}.
 
@@ -42,7 +41,7 @@ During $\mathsf{Setup}$ parties agree on group elements $G,B \in \mathbb{G}$. Af
         $$t(x) = l(x)r(x) = (a+s_L x)(b+s_R x) = ab + (as_R + bs_L) + s_L s_R x^2$$
     \item Prover $\mathcal{P}$ draws blinding factors $\alpha_0, \alpha_1, \beta_0, \beta_1, \tau_0, \tau_1, \tau_2 \xleftarrow{R} \mathbb{F}_p$ forming blinding polynomials 
     $$\alpha(x) = \alpha_0 + \alpha_1 x, \beta(x) = \beta_0 + \beta_1 x, \tau(x) = \tau_0 + \tau_1 x + \tau_2 x^2$$
-    and sends to $\mathcal{V}$ Pedersen commitments for each coefficient of $l(x), r(x), t(x)$:
+    and sends to $\mathcal{V}$ Pedersen commitments (\Cref{section:commitment-schemes}) for each coefficient of $l(x), r(x), t(x)$:
         \begin{equation}
             \begin{aligned}
                 L_0 &= [a]G + [\alpha_0]B & R_0 &= [b]G + [\beta_0]B\\
@@ -187,10 +186,10 @@ Where $G,H,B \in \mathbb{G}$ are generators with unknown discrete log relations,
 The protocol obviously has \textit{perfect completeness, special soundness, perfect honest-verifier zero-knowledge} due to the \Cref{th:poly_mul}.
 
 \begin{remark} %todo: add reference for Chaum-Pedersen
-    Now curious reader may wonder why build so overwhelmingly complicated protocol for simple multiplication and not just use classic \textit{Chaum-Pedersen protocol} for DH-triplets? Indeed, it definitely could establish that for given group elements $[a]G, [b]G, [c]G$ equality $c=ab$ holds, but unfortunately commitments $[a]G, [b]G, [c]G$ do not have a \textit{perfect hiding} property (though preserving \textit{computational binding} property) so an adversary could potentially learn $a,b,c$ values if they are not uniformly distributed.
+    Now curious reader may wonder why build so overwhelmingly complicated protocol for simple multiplication and not just use classic \textit{Chaum-Pedersen protocol} for DH-triplets? Indeed, it definitely could establish that for given group elements $[a]G, [b]G, [c]G$ equality $c=ab$ holds, but unfortunately commitments $[a]G, [b]G, [c]G$ do not have a \textit{perfect hiding} property (though preserving \textit{computational binding} property) so an adversary could potentially learn $a,b,c$ values especially if they are small or have non-uniform distribution.
 \end{remark}
 
-Also, there's a folklore version of very similar protocol for establishing product relationship between Pedersen committed values described in \href{https://people.cs.georgetown.edu/jthaler/ProofsArgsAndZK.pdf}{section 12.3 of Thaler's book}
+Also, there's a folklore version of very similar protocol for establishing product relationship between Pedersen committed values described in \cite[section 12]{thaler}.
 
 \subsubsection{Zero-knowledge inner-product protocol}
 
@@ -519,7 +518,7 @@ Here we briefly describe a knowledge extractor $\mathcal{E}'_{ip}$ for a witness
     
         We need the fourth rewinding to assert equality of inner product: 
         $$\langle \mathbf{a}^{(1)}, \mathbf{b}^{(1)} \rangle = \sum_{i=1}^3 v_i \langle \mathbf{a}_i^{(0)}, \mathbf{b}_i^{(0)} \rangle$$
-        We won't describe it fully since it takes some unwieldy technical details and refer a reader to the original \textit{bulletproofs} paper, where the full proof of extraction is described in Theorem 1.
+        We won't describe it fully since it takes some unwieldy technical details and refer a reader to the original \textit{bulletproofs} paper \cite{bulletproofs}, where the full proof of extraction is described in Theorem 1.
     \item The extractor $\mathcal{E}'_{ip}$ recursively extracts $\mathbf{a}^{(k+1)}, \mathbf{b}^{(k+1)}$ from $ \mathbf{a}^{(k)}, \mathbf{b}^{(k)}$ using the method described in steps 2-5 until it reaches the final witness $\mathbf{a}^{(d)}, \mathbf{b}^{(d)} = \mathbf{a}, \mathbf{b}$ for which the relation $\mathcal{R}'_{ip}$ holds: 
     $$P' =  \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle + [\langle \mathbf{a,b} \rangle]Q$$
 \end{enumerate}
@@ -547,7 +546,7 @@ Building the extractor $\mathcal{E}_{ip}$ for $\Pi_{ip}$ is quite simple relativ
         Hence $c = \langle \mathbf{a,b} \rangle$.
 \end{enumerate}
 
-To formally finalize a proof of \textit{witness-extended emulation} we also need to apply so-called \textit{the forking lemma}, we again refer a reader to the original \textit{bulletproofs} paper $\quad \square$.
+To formally finalize a proof of \textit{witness-extended emulation} we also need to apply so-called \textit{the forking lemma}, we again refer a reader to the original \textit{bulletproofs} paper \cite{bulletproofs} $\quad \square$.
 
 \subsection{Inner-product based polynomial commitment scheme}
 
@@ -772,7 +771,7 @@ The proof size of \textbf{range-proof} protocol is $2 \log_2n +4$ group $\mathbb
 \begin{remark}
     Range proofs could be efficiently aggregated: e.g. one could prove the relation using slightly modified range proof protocol $\Pi_{rp}$
     $$\mathcal{R}_{rpm} = \{ (G, B, \vec{V}, n; \vec{v}, \vec{\gamma}) \vert \forall i \in 1..m: V_i = [v_i]G + [\gamma_i]B, v_i \in [0, 2^n) \}$$
-    Where $\vec{v} = (v_1, v_2, \dots, v_m)$ and $\vec{\gamma} = (\gamma_1, \gamma_2, \dots, \gamma_m)$ -- respectively secrets and blinding factors. Detail explanation of aggregation protocol could be found in \href{https://eprint.iacr.org/2017/1066.pdf}{original bulletroofs paper}
+    Where $\vec{v} = (v_1, v_2, \dots, v_m)$ and $\vec{\gamma} = (\gamma_1, \gamma_2, \dots, \gamma_m)$ -- respectively secrets and blinding factors. Detail explanation of aggregation protocol could be found in original bulletproofs paper \cite{bulletproofs}
 \end{remark}
 
 \begin{example}
@@ -788,7 +787,7 @@ The proof size of \textbf{range-proof} protocol is $2 \log_2n +4$ group $\mathbb
 
 \subsubsection{Arithmetization}
 
-\textbf{Bulletproofs} arithmetization slightly differs from the classic R1CS we studied before, however it could be transformed vice-versa easily. Also \textbf{bulletproofs} arithmetization is more convenient and human-friendly for encoding most of the arithmetic circuits than the R1CS.
+\textbf{Bulletproofs} arithmetization slightly differs from the classic R1CS we studied before at \Cref{section:r1cs}, however it could be transformed vice-versa easily. Also \textbf{bulletproofs} arithmetization is more convenient and human-friendly for encoding most of the arithmetic circuits than the R1CS.
 
 There are two types of variables in \textit{bulletproofs} constraint system: \textit{low-level} and \textit{high-level}. Typically \textit{high-level} variables are provided with Pedersen commitments $\mathbf{V} \in \mathbb{G}^m$ as the private witness inputs $\mathbf{v} \in \mathbb{F}_p^m$ to the circuit, while \textit{low-level} variables $\mathbf{a}_L, \mathbf{a}_R, \mathbf{a}_O \in \mathbb{F}_p^n$ are the intermediate witness values of computation. We will define circuit as a set of multiplication constraints operating with \textit{low-level} variables and set of linear constraints which links \textit{low-level} variables between each other and \textit{high-level} variables as well.
 
