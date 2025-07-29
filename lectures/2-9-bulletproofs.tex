@@ -555,12 +555,33 @@ Building the extractor $\mathcal{E}_{ip}$ for $\Pi_{ip}$ is quite simple relativ
 
 To formally finalize a proof of \textit{witness-extended emulation} we also need to apply so-called \textit{the forking lemma}, we again refer a reader to the original \textit{bulletproofs} paper \cite{bulletproofs} $\quad \square$.
 
+\subsubsection{Zero-knowledge extension of inner-product argument}
+
+The main approach to make \textit{inner-product argument} \textit{zero-knowledge} is to use $\Pi_{zkip}$ protocol which original bulletproofs \cite{bulletproofs} does for \textit{range proofs} and \textit{arithmetic circuits satisfiability}. However, there exists an alternative elegant construction based on tweaking \textit{inner-product argument} itself described in \cite[Appendix E.2]{pvss}. 
+
+The key idea is to bring a blinding factor $\delta \in \mathbb{F}_p$ with a verifier-provided random element $S \in \mathbb{G}$ to the commitment $P_k$:
+$$ P_k = \langle \mathbf{a}^{(k)}, \mathbf{G}^{(k)} \rangle + \langle \mathbf{b}^{(k)}, \mathbf{H}^{(k)} \rangle + [\langle \mathbf{a}^{(k)}, \mathbf{b}^{(k)} \rangle]Q + [\delta^{(k)}]S $$
+To get $L_k, R_k$ prover draws $\delta^{(k)}_L, \delta^{(k)}_R \xleftarrow{R} \mathbb{F}_p$ and sets:
+\begin{align*}
+    P_{k-1} &= P_k + [u_k^2] L_k + [u_k^{-2}] R_k \\
+    L_{k} &= \langle \mathbf{a_{lo}}^{(k)}, \mathbf{G_{hi}}^{(k)}\rangle + \langle \mathbf{b_{hi}}^{(k)}, \mathbf{H_{lo}}^{(k)}\rangle + [\langle \mathbf{a_{lo}}^{(k)}, \mathbf{b_{hi}}^{(k)}\rangle]Q + [\delta^{(k)}_L]S \\
+    R_{k} &= \langle \mathbf{a_{hi}}^{(k)}, \mathbf{G_{lo}}^{(k)}\rangle + \langle \mathbf{b_{lo}}^{(k)}, \mathbf{H_{hi}}^{(k)}\rangle + [\langle \mathbf{a_{hi}}^{(k)}, \mathbf{b_{lo}}^{(k)}\rangle]Q + [\delta^{(k)}_R]S
+\end{align*}
+Then $\mathcal{P}$ updates next-round $\delta$ using verifier-provided challenge $u_k$: 
+$$\delta^{(k-1)} = \delta^{(k)} + u_k^2\delta^{(k)}_L + u_k^{-2}\delta^{(k)}_R$$
+
+On the last step prover must prove that he possesses $a^{(0)}, b^{(0)}$ such that:
+\begin{equation*}
+    P_0 = P_k + \sum_{i=1}^k ([u_i^2]L_i + [u_i^{-2}]R_i) = [a^{(0)}]G^{(0)} + [b^{(0)}]H^{(0)} + [a^{(0)}b^{(0)}]Q + [\delta^{(0)}]S
+\end{equation*}
+
+$P_0$ is a Pedersen commitment to $a^{(0)}, b^{(0)}, a^{(0)} \cdot b^{(0)}$ with blinding factor $\delta^{(0)}$ and could easily be computed by verifier. One could prove opening to that commitment using protocol similar to $\Pi_{zkip}$
 \subsection{Inner-product based polynomial commitment scheme}
 
 Here we describe one of the main theoretical applications of the \textit{inner-product argument} -- \textbf{polynomial commitment scheme} that relies only on \textit{discrete logarithm} assumption, while studied before \textit{KZG} commitment scheme needs bilinear pairings. 
 
 \begin{definition}
-    The inner-product polynomial commitment scheme $\mathcal{C}_{ip} = (\mathsf{Commit, Open, VerifyOpen})$ is defined as follows. Let $f(x) = \sum_{i=0}^{n-1} a_i x^i \in \mathbb{F}_p[x]$ be a polynomial of degree $n-1$ and let $\mathbf{G} = (G_1, \dots, G_n)$ be independent group generators. 
+    The inner-product non-hiding polynomial commitment scheme $\mathcal{C}_{ip} = (\mathsf{Commit, Open, VerifyOpen})$ is defined as follows. Let $f(x) = \sum_{i=0}^{n-1} a_i x^i \in \mathbb{F}_p[x]$ be a polynomial of degree $n-1$ and let $\mathbf{G} = (G_1, \dots, G_n)$ be independent group generators. 
     \begin{itemize}
         \item $\mathsf{Commit}$ returns polynomial commitment $\mathsf{Com}(f) = \langle \mathbf{f}, \mathbf{G} \rangle$ where $\mathbf{f} = (a_0, \dots, a_{n-1})$
         \item $\mathsf{Open}$ given evaluation point $u \in \mathbb{F}_p$ computes $\mathbf{u^n} = (1, u, u^2, \dots, u^{n-1})$,  obtains $f(u) = \langle \mathbf{f, u^n} \rangle$ and runs \textit{inner-product argument} $\Pi_{ip}$ non-interactively setting 
@@ -571,7 +592,7 @@ Here we describe one of the main theoretical applications of the \textit{inner-p
 \end{definition}
 
 \begin{remark}
-    As the second vector $\mathbf{b} = \mathbf{u^n}$ is known to the verifier, the prover don't have to commit to it using vector $\mathbf{H}$, so the parties might adjust all the steps eliminating vector $\mathbf{H}$ and $\mathbf{b}$ vector compression as well. The full scheme is described \href{https://www.zkdocs.com/docs/zkdocs/commitments/ipa-pcs/}{here}.
+    As the second vector $\mathbf{b} = \mathbf{u^n}$ is known to the verifier, the prover don't have to commit to it using vector $\mathbf{H}$, so the parties might adjust all the steps eliminating vector $\mathbf{H}$ and $\mathbf{b}$ vector compression as well. The full scheme is described \href{https://www.zkdocs.com/docs/zkdocs/commitments/ipa-pcs/}{here}. Note that described scheme is not zero-knowledge as classic \textit{inner-product} argument is not zero-knowledge. But we could make it zero-knowledge using $\Pi_{zkip}$ protocol or using alternative construction from \Cref{subsection:alternative-zk-ip}.
 \end{remark}
 
 \subsection{Range proofs}
