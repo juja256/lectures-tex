@@ -6,6 +6,8 @@
 \homepage{zkdl-camp.github.io}
 \github{ZKDL-Camp}
 
+\pgfplotsset{compat=1.18}
+
 \begin{document}
 \frame {
     \tikz [remember picture,overlay]
@@ -208,7 +210,7 @@
     Where $Q=[r]B, P' = P + [cr]B = P+[c]Q$
 \end{frame}
 
-\begin{frame}{Comression step}
+\begin{frame}{Compression step}
     Assuming $n = 2^d$ define by $\mathbf{G_{lo}} = (G_1, \dots, G_{n/2}), \mathbf{G_{hi}} = (G_{n/2+1},\dots, G_n) \in \mathbb{G}^{n/2}$ -- lower and higher halves of vector $\mathbf{G}$ and $\mathbf{a_{lo}} = (a_1, \dots, a_{n/2}), \mathbf{a_{hi}} = (a_{n/2+1},\dots,a_n) \in \mathbb{F}_p^{n/2}$ -- lower and higher halves of $\mathbf{a} \in \mathbb{F}_p^{n}$.
 
     Let $u_k \in \mathbb{F}_p$ - be challenge scalar, define compressed vectors:

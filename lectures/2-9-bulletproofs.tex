@@ -555,34 +555,53 @@ Building the extractor $\mathcal{E}_{ip}$ for $\Pi_{ip}$ is quite simple relativ
 
 To formally finalize a proof of \textit{witness-extended emulation} we also need to apply so-called \textit{the forking lemma}, we again refer a reader to the original \textit{bulletproofs} paper \cite{bulletproofs} $\quad \square$.
 
-\subsubsection{Zero-knowledge extension of inner-product argument}
+\subsubsection{Zero-knowledge extension of inner-product argument}\label{subsection:alternative-zk-ip}
 
-The main approach to make \textit{inner-product argument} \textit{zero-knowledge} is to use $\Pi_{zkip}$ protocol which original bulletproofs \cite{bulletproofs} does for \textit{range proofs} and \textit{arithmetic circuits satisfiability}. However, there exists an alternative elegant construction based on tweaking \textit{inner-product argument} itself described in \cite[Appendix E.2]{pvss}. 
+The main approach to make \textit{inner-product argument} \textit{zero-knowledge} is to use $\Pi_{zkip}$ protocol which original bulletproofs \cite{bulletproofs} does for \textit{range proofs}(\Cref{subsection:bulletproofs-range-proofs}) and \textit{arithmetic circuits satisfiability}(\Cref{subsection:bulletproofs-arithmetic-circuits}). However, there exists an alternative elegant construction based on tweaking \textit{inner-product argument} itself described in \cite[Appendix E.2]{pvss}. 
 
-The key idea is to bring a blinding factor $\delta \in \mathbb{F}_p$ with a verifier-provided random element $S \in \mathbb{G}$ to the commitment $P_k$:
-$$ P_k = \langle \mathbf{a}^{(k)}, \mathbf{G}^{(k)} \rangle + \langle \mathbf{b}^{(k)}, \mathbf{H}^{(k)} \rangle + [\langle \mathbf{a}^{(k)}, \mathbf{b}^{(k)} \rangle]Q + [\delta^{(k)}]S $$
+The key idea is to bring a blinding factor $\delta \in \mathbb{F}_p$ with a verifier-provided random element $D \in \mathbb{G}$ to the commitment $P_k$:
+$$ P_k = \langle \mathbf{a}^{(k)}, \mathbf{G}^{(k)} \rangle + \langle \mathbf{b}^{(k)}, \mathbf{H}^{(k)} \rangle + [\langle \mathbf{a}^{(k)}, \mathbf{b}^{(k)} \rangle]Q + [\delta^{(k)}]D $$
 To get $L_k, R_k$ prover draws $\delta^{(k)}_L, \delta^{(k)}_R \xleftarrow{R} \mathbb{F}_p$ and sets:
 \begin{align*}
     P_{k-1} &= P_k + [u_k^2] L_k + [u_k^{-2}] R_k \\
-    L_{k} &= \langle \mathbf{a_{lo}}^{(k)}, \mathbf{G_{hi}}^{(k)}\rangle + \langle \mathbf{b_{hi}}^{(k)}, \mathbf{H_{lo}}^{(k)}\rangle + [\langle \mathbf{a_{lo}}^{(k)}, \mathbf{b_{hi}}^{(k)}\rangle]Q + [\delta^{(k)}_L]S \\
-    R_{k} &= \langle \mathbf{a_{hi}}^{(k)}, \mathbf{G_{lo}}^{(k)}\rangle + \langle \mathbf{b_{lo}}^{(k)}, \mathbf{H_{hi}}^{(k)}\rangle + [\langle \mathbf{a_{hi}}^{(k)}, \mathbf{b_{lo}}^{(k)}\rangle]Q + [\delta^{(k)}_R]S
+    L_{k} &= \langle \mathbf{a_{lo}}^{(k)}, \mathbf{G_{hi}}^{(k)}\rangle + \langle \mathbf{b_{hi}}^{(k)}, \mathbf{H_{lo}}^{(k)}\rangle + [\langle \mathbf{a_{lo}}^{(k)}, \mathbf{b_{hi}}^{(k)}\rangle]Q + [\delta^{(k)}_L]D \\
+    R_{k} &= \langle \mathbf{a_{hi}}^{(k)}, \mathbf{G_{lo}}^{(k)}\rangle + \langle \mathbf{b_{lo}}^{(k)}, \mathbf{H_{hi}}^{(k)}\rangle + [\langle \mathbf{a_{hi}}^{(k)}, \mathbf{b_{lo}}^{(k)}\rangle]Q + [\delta^{(k)}_R]D
 \end{align*}
 Then $\mathcal{P}$ updates next-round $\delta$ using verifier-provided challenge $u_k$: 
 $$\delta^{(k-1)} = \delta^{(k)} + u_k^2\delta^{(k)}_L + u_k^{-2}\delta^{(k)}_R$$
 
-On the last step prover must prove that he possesses $a^{(0)}, b^{(0)}$ such that:
+On the last step prover must prove that he possesses $a = a^{(0)}, b = b^{(0)}, \delta = \delta^{(0)}$ such that for $G = G^{(0)}, H = H^{(0)}$ equality holds:
 \begin{equation*}
-    P_0 = P_k + \sum_{i=1}^k ([u_i^2]L_i + [u_i^{-2}]R_i) = [a^{(0)}]G^{(0)} + [b^{(0)}]H^{(0)} + [a^{(0)}b^{(0)}]Q + [\delta^{(0)}]S
+    P_0 = P_k + \sum_{i=1}^k ([u_i^2]L_i + [u_i^{-2}]R_i) = [a]G + [b]H + [a\cdot b]Q + [\delta]D
 \end{equation*}
 
-$P_0$ is a Pedersen commitment to $a^{(0)}, b^{(0)}, a^{(0)} \cdot b^{(0)}$ with blinding factor $\delta^{(0)}$ and could easily be computed by verifier. One could prove opening to that commitment using protocol similar to $\Pi_{zkip}$
+$P_0 = P_k + \sum_{i=1}^k ([u_i^2]L_i + [u_i^{-2}]R_i)$ is a Pedersen commitment to $a, b, a \cdot b$ with blinding factor $\delta$ and could easily be computed by verifier. One could prove knowledge of an opening $(a,b,\delta)$ to that commitment using protocol similar to $\Pi_{zkip}$.
+\begin{enumerate}
+    \item $\mathcal{P}$ draws blinders $u,v,r,s \xleftarrow{R} \mathbb{F}_p$ and sends to $\mathcal{V}$ commitments:
+    \begin{align*}
+        A &= [r]G + [s]H + [as + br]Q + [u]D \\
+        T &= [rs]Q + [v]D
+    \end{align*}
+    \item $\mathcal{V}$ draws challenge $c \xleftarrow{R} \mathbb{F}_p$ and sends it to $\mathcal{P}$
+    \item $\mathcal{P}$ evaluates and sends to $\mathcal{V}$:
+    \begin{align*}
+        a' &= a + rc \\
+        b' &= b + sc \\
+        \delta' &= \delta + uc + vc^2
+    \end{align*}
+    \item $\mathcal{V}$ performs check:
+    $$[a']G + [b']H + [a'b']Q + [\delta']D \stackrel{\text{?}}{=} P_0 + [c]A + [c^2]T$$
+\end{enumerate}
+
+Protocol is \textit{knowledge-sound} as value $\delta$ could easily be extracted from three accepting transcripts. To argue \textit{zero-knowledge} we stress that an adversary couldn't learn anything from transcript and each prover's message $(L_k, R_k)$ could be easily simulated by random element, at the base of recursion simulator simulates zero-knowledge proof of opening $(a,b,\delta)$ to commitment $P_0$.
 \subsection{Inner-product based polynomial commitment scheme}
 
 Here we describe one of the main theoretical applications of the \textit{inner-product argument} -- \textbf{polynomial commitment scheme} that relies only on \textit{discrete logarithm} assumption, while studied before \textit{KZG} commitment scheme needs bilinear pairings. 
 
 \begin{definition}
-    The inner-product non-hiding polynomial commitment scheme $\mathcal{C}_{ip} = (\mathsf{Commit, Open, VerifyOpen})$ is defined as follows. Let $f(x) = \sum_{i=0}^{n-1} a_i x^i \in \mathbb{F}_p[x]$ be a polynomial of degree $n-1$ and let $\mathbf{G} = (G_1, \dots, G_n)$ be independent group generators. 
+    The inner-product non-hiding polynomial commitment scheme $\mathcal{C}_{ip} = (\mathsf{Setup, Commit, Open, VerifyOpen})$ is defined as follows. Let $f(x) = \sum_{i=0}^{n-1} a_i x^i \in \mathbb{F}_p[x]$ be a polynomial of degree $n-1$.
     \begin{itemize}
+        \item $\mathsf{Setup}$ returns a vector of independent generators $\mathbf{G} = (G_1, \dots, G_n)$.
         \item $\mathsf{Commit}$ returns polynomial commitment $\mathsf{Com}(f) = \langle \mathbf{f}, \mathbf{G} \rangle$ where $\mathbf{f} = (a_0, \dots, a_{n-1})$
         \item $\mathsf{Open}$ given evaluation point $u \in \mathbb{F}_p$ computes $\mathbf{u^n} = (1, u, u^2, \dots, u^{n-1})$,  obtains $f(u) = \langle \mathbf{f, u^n} \rangle$ and runs \textit{inner-product argument} $\Pi_{ip}$ non-interactively setting 
         $$\mathbf{a} = \mathbf{f}, \mathbf{b} = \mathbf{u^n}, P = \mathsf{Com}(f), c = f(u)$$ 
@@ -595,7 +614,7 @@ Here we describe one of the main theoretical applications of the \textit{inner-p
     As the second vector $\mathbf{b} = \mathbf{u^n}$ is known to the verifier, the prover don't have to commit to it using vector $\mathbf{H}$, so the parties might adjust all the steps eliminating vector $\mathbf{H}$ and $\mathbf{b}$ vector compression as well. The full scheme is described \href{https://www.zkdocs.com/docs/zkdocs/commitments/ipa-pcs/}{here}. Note that described scheme is not zero-knowledge as classic \textit{inner-product} argument is not zero-knowledge. But we could make it zero-knowledge using $\Pi_{zkip}$ protocol or using alternative construction from \Cref{subsection:alternative-zk-ip}.
 \end{remark}
 
-\subsection{Range proofs}
+\subsection{Range proofs}\label{subsection:bulletproofs-range-proofs}
 
 Let $G,B\in \mathbb{G}$ -- independent group generators. Let's consider the relation: 
 $$\mathcal{R}_{rp} = \{ (G, B, V, n; v, \gamma) \vert V = [v]G + [\gamma]B, v \in [0, 2^n) \}$$ 
@@ -809,7 +828,7 @@ The proof size of \textbf{range-proof} protocol is $2 \log_2n +4$ group $\mathbb
 
     Therefore, \textbf{bulletproofs range proof} protocol is capable to prove a knowledge of witness to any $NP$-problem as they all could be reduced to the $\textbf{subset-sum problem}$
 \end{example}
-\subsection{Arithmetic circuits proofs}
+\subsection{Arithmetic circuits proofs}\label{subsection:bulletproofs-arithmetic-circuits}
 
 \textbf{Bulletproofs} presents not only range proofs, but also efficient proofs for arithmetic circuits satisfiability. As we could see before, inner-product relation is quite powerful tool and could be used to prove a knowledge of witness to any $NP$-problem. But here we present a more convenient way to compile arithmetic circuits into inner-product relation.
 
