@@ -47,6 +47,26 @@
     \end{block}
 \end{frame}
 
+\begin{frame}{Recap: zkmul}
+    Consider relation $R_{mul} = \{ (\bot; l(x), r(x), t(x)) \vert t(x) = l(x)r(x) \}$ where $l(x) = a + s_L x, r(x) = b + s_R x, t(x) = l(x)r(x)$. Protocol \textbf{zk-mul} is defined as follows:
+
+    \begin{itemize}
+        \item Prover computes and sends to $\mathcal{V}$ commitments to $l(x), r(x), t(x)$:
+            \begin{align*}
+                A &= [a]G + [b]H + [\alpha]B & T_0 &= [ab]G + [\tau_0]B\\
+                S &= [s_L]G + [s_R]H + [\beta]B &T_1 &= [s_L + s_R]G + [\tau_1]B\\
+                &&T_2 &= [s_Ls_R]G + [\tau_2]B
+            \end{align*}
+            \item Verifier draws random challenge $u \in \mathbb{F}_p$ and sends it to prover
+            \item Prover evaluates and sends to Verifier $(l_u, r_u, t_u, \alpha_u, \tau_u)$: 
+            \begin{align*}
+                l_u =l(u), r_u = r(u), t_u = l_u \cdot r_u, 
+                \alpha_u = \alpha + \beta u, \tau_u = \tau_0 + \tau_1 u + \tau_2 u^2
+            \end{align*}
+            \item Verifier checks: $A + [u]S \stackrel{?}{=} [l_u]G + [r_u]H + [\alpha_u]B$, $[t_u]G + [\tau_u]B \stackrel{?}{=} T_0 + [u]T_1 + [u^2]T_2$, $t_u \stackrel{?}{=} l_u r_u$
+    \end{itemize}
+\end{frame}
+
 \section{IPA polynomial commitment scheme}
 
 \begin{frame}{Recap: Polynomial commitments}
@@ -129,28 +149,89 @@
     $$\mathbf{a}_L' \gets \mathbf{a}_L + \mathbf{s}_L x \quad \mathbf{a}_R' \gets \mathbf{a}_R + \mathbf{s}_R x$$
     Compute polynomials $\mathbf{l}(x) = \mathbf{l}_0 + \mathbf{l}_1 x, \quad \mathbf{r}(x) = \mathbf{r}_0 + \mathbf{r}_1 x$:
     \begin{align*}
-        \mathbf{l}(x) &= \mathbf{a}_L' - z \cdot \mathbf{1}^n = (\mathbf{a}_L + \mathbf{s}_L x) - z \cdot \mathbf{1}^n = \mathbf{a}_L - z \cdot \mathbf{1}^n + \mathbf{s}_L x\\
+        \mathbf{l}(x) &= \mathbf{a}_L' - z \cdot \mathbf{1}^n = (\mathbf{a}_L + \mathbf{s}_L x) - z \cdot \mathbf{1}^n = \textcolor{teal}{\mathbf{a}_L - z \cdot \mathbf{1}^n} + \mathbf{s}_L x\\
         \mathbf{r}(x) &= z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a}_R' \circ \mathbf{y}^n = z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + (\mathbf{a}_R + \mathbf{s}_R x) \circ \mathbf{y}^n \\
-        & = z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a}_R \circ \mathbf{y}^n + \mathbf{s}_R \circ \mathbf{y}^n x
+        & = \textcolor{orange}{z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a}_R \circ \mathbf{y}^n} + \mathbf{s}_R \circ \mathbf{y}^n x
     \end{align*}
 \end{frame}
 
-\begin{frame}{Bulletproofs range proof: Example}
+\begin{frame}{Compiling range proof into inner-product}
+    $$t(x) = \langle \mathbf{l}(x), \mathbf{r}(x) \rangle = t_0 + t_1 x + t_2 x^2$$
+    Now $\mathcal{P}$ needs to apply \textbf{zk-mul} for proving: $$t_0 =  \langle \textcolor{teal}{\mathbf{a}_L - z \cdot \mathbf{1}^n}, \textcolor{orange}{z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a}_R \circ \mathbf{y}^n}\rangle = z^2v + \delta(y,z)$$ 
+    \textbf{Note}: $\mathcal{V}$ could compute commitment $Com(t_0)$ using $V=Com(v)$
+    \begin{alertblock}{Remark}
+    We couldn't apply raw \textbf{zk-mul} as $\mathbf{l}_0$ depends on verifier-provided challenges, instead $\mathcal{P}$ firstly commits to $\mathbf{a}_L, \mathbf{a}_R$ and blinders $\mathbf{s}_L, \mathbf{s}_R$, obtaints challenges $y,z$ from $\mathcal{V}$ and computes rest of the commitments. 
+    
+    During verification phase $\mathcal{V}$ should adjust commitments to $\mathbf{l}(x), \mathbf{r}(x)$ by himself using homomorphic proterties of Pedersen commitment scheme.
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}{Range proofs: building the protocol}
     \begin{itemize}
-        \item $v = 19$, $n=5$, $\mathbf{a}_L = (1,1,0,0,1)$
-        \item $v = 1\cdot1 + 2\cdot1 + 4\cdot0 + 8\cdot0 + 16\cdot1 = 19$
-        \item Prove $\mathbf{a}_L \in \{0,1\}^5$ and $v = \langle \mathbf{a}_L, (1,2,4,8,16) \rangle$
-        \item All done in zero-knowledge
+        \item $\mathsf{Setup}$ returns independent generators $\mathbf{G}, \mathbf{H} \in \mathbb{G}^n$
+        \item Prover does bit decomposition of $v$: $\mathbf{a}_L \gets \mathbf{v}, \mathbf{b_L} \gets \mathbf{a}_L - \mathbf{1}^n$, choses blinding terms $\mathbf{s}_L, \mathbf{s}_R \in \mathbb{F}_p^n, \alpha, \beta \in \mathbb{F}_p$, sends commitments:
+            \begin{align*}
+                A = \langle \mathbf{a}_L, \mathbf{G} \rangle + \langle \mathbf{b_L}, \mathbf{H} \rangle + [\alpha]B &&
+                S = \langle \mathbf{s}_L, \mathbf{G} \rangle + \langle \mathbf{s}_R, \mathbf{H} \rangle + [\beta]B
+            \end{align*}
+        \item Verifier $\mathcal{V}$ samples challenges $y, z \xleftarrow{R} \mathbb{F}_p$ and sends them to $\mathcal{P}$
+        \item Prover $\mathcal{P}$ reconstructs polynomials $\mathbf{l}(x), \mathbf{r}(x), \mathbf{t}(x)$:
+            \begin{equation*}
+                \begin{aligned}
+                    \mathbf{l}(x) &= \mathbf{a}_L - z \cdot \mathbf{1}^n + \mathbf{s}_L x\\
+                    \mathbf{r}(x) &= z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a}_R \circ \mathbf{y}^n + \mathbf{s}_R \circ \mathbf{y}^n x\\
+                    t(x) &= \langle \mathbf{l}(x), \mathbf{r}(x) \rangle = t_0 + t_1 x + t_2 x^2
+                \end{aligned}
+            \end{equation*}
+            \begin{equation*}
+                \begin{aligned}
+                    t_0 &=  \langle \textcolor{teal}{\mathbf{a}_L - z \cdot \mathbf{1}^n}, \textcolor{orange}{z^2 \cdot \mathbf{2}^n + z \cdot \mathbf{y}^n + \mathbf{a}_R \circ \mathbf{y}^n}\rangle = z^2v + \delta(y,z)\\
+                    t_1 &= \langle \mathbf{a}_L - z \cdot \mathbf{1}^n, \mathbf{y}^n \circ \mathbf{s}_R \rangle + \langle \mathbf{y}^n \circ (\mathbf{a}_R + z\cdot \mathbf{1}^n ) + z^2 \cdot \mathbf{2}^n, \mathbf{s}_L\rangle \\
+                    t_2 & = \langle \mathbf{s}_L, \mathbf{y}^n \circ \mathbf{s}_R \rangle
+                \end{aligned}
+            \end{equation*}
     \end{itemize}
 \end{frame}
 
-\begin{frame}{Bulletproofs range proof: Performance}
+\begin{frame}{Range proofs: proving}
     \begin{itemize}
-        \item Proof size: $2\log_2 n + 9$ group elements (for $n$-bit range)
-        \item No trusted setup
-        \item Batch proofs: multiple values in one proof
-        \item Efficient for client-side proving
+        \item Prover $\mathcal{P}$ draws blinding factors $\tau_1, \tau_2 \xleftarrow{R} \mathbb{F}_p$ and sends to $\mathcal{V}$ commitments for coefficients of $t(x)$:
+            \begin{equation*}
+                \begin{aligned}
+                    T_1 &= [t_1]G + [\tau_1]B \\
+                    T_2 &= [t_2]G + [\tau_2]B
+                \end{aligned}
+            \end{equation*}
+            \textbf{Note:} prover does not have to send commitment to $t_0$ as it's the inner-product we want to prove and it could be computed from high-level commitment $V$.
+        \item Verifier $\mathcal{V}$ samples and sends to $\mathcal{P}$ evaluation point $u \xleftarrow{R} \mathbb{F}_p$
+        \item Prover $\mathcal{P}$ evaluates polynomials at $u$:
+        \begin{equation*}
+            \begin{aligned}
+                \mathbf{l}_u & = \mathbf{l}(u) & \alpha_u &= \alpha + \beta u\\
+                \mathbf{r}_u &= \mathbf{r}(u) & \tau_u &= z^2\gamma + \tau_1 u + \tau_2 u^2\\
+                t_u &= t(u) = t_0 + t_1u + t_2u^2 & 
+            \end{aligned}
+        \end{equation*}
+        and sends $(\mathbf{l}_u, \mathbf{r}_u, t_u, \alpha_u, \tau_u)$ to $\mathcal{V}$.
     \end{itemize}
+\end{frame}
+
+\begin{frame}{Range proofs: verification}
+    \begin{itemize}
+        \item Verifier $\mathcal{V}$ checks:
+            \begin{equation*}
+                \begin{aligned}
+                    A + [u]S + \langle -z \cdot \mathbf{1}^n, \mathbf{G} \rangle &+ \langle z \cdot \mathbf{y}^n + z^2 \cdot \mathbf{2}^n, \mathbf{y}^{-n} \circ \mathbf{H} \rangle \\
+                    &\stackrel{\text{?}}{=} \langle \mathbf{l}_u, \mathbf{G} \rangle + \langle \mathbf{r}_u, \mathbf{y}^{-n} \circ \mathbf{H} \rangle + [\alpha_u]B \\
+                    [t_u]G + [\tau_u]B &\stackrel{\text{?}}{=} [z^2]V + [\delta(y,z)]G + [u]T_1 + [u^2]T_2 \\
+                    t_u &\stackrel{\text{?}}{=} \langle \mathbf{l}_u \mathbf{r}_u \rangle
+                \end{aligned}
+            \end{equation*}
+    \end{itemize}
+    \begin{block}{Remark}
+        To provide logarithmic size-proof instead of sending $\mathbf{l}_u, \mathbf{r}_u$ parties could run an inner-product argument \textbf{IPA} on inputs $(\mathbf{G},\mathbf{y}^{-n} \circ \mathbf{H}, P, t_u; \mathbf{l}_u, \mathbf{r}_u)$ where:
+        $$P = A + [u]S + \langle -z \cdot \mathbf{1}^n, \mathbf{G} \rangle + \langle z \cdot \mathbf{y}^n + z^2 \cdot \mathbf{2}^n, \mathbf{y}^{-n} \circ \mathbf{H} \rangle - [\alpha_u]B$$
+    \end{block}
 \end{frame}
 
 \section{Arithmetic circuits}
