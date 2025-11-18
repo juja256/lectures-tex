@@ -15,7 +15,7 @@
 
 \subsection{Introduction}
 
-\textbf{Bulletproofs} is a zero-knowledge proof protocol with logarithmically sized proofs without a trusted setup. Originally, \textbf{bulletproofs} was developed to provide efficient range proofs in application to confidential transactions, but it applies also to arbitrary arithmetic circuit (possibly encoded in R1CS). In the heart of protocol lays \textbf{inner-product argument} which we describe in details. Technically, the protocol is built in an interactive fashion (like $\Sigma$-protocols from \Cref{section:sigma}), but one could make it non-interactive with a Fiat-Shamir transform. One key feature that differs it from $\Sigma$-protocols is the number of challenges from a verifier $\mathcal{V}$ -- in $\Sigma$-protocols there is only one challenge, while \textbf{bulletproofs} implies a logarithmic in circuit size number of queries. 
+\textbf{Bulletproofs} is a \textit{non-interactive zero-knowledge protocol(NIZK)} with logarithmically sized proofs without a trusted setup. Originally, \textbf{bulletproofs} was developed to provide efficient range proofs in application to confidential transactions, but it applies also to arbitrary arithmetic circuit (possibly encoded in R1CS). In the heart of protocol lays \textbf{inner-product argument} which we describe in details. Technically, the protocol is built in an interactive fashion (like $\Sigma$-protocols from \Cref{section:sigma}), but one could make it non-interactive with a Fiat-Shamir transform. One key feature that differs it from $\Sigma$-protocols is the number of challenges from a verifier $\mathcal{V}$ -- in $\Sigma$-protocols there is only one challenge, while \textbf{bulletproofs} implies a logarithmic in circuit size number of queries. 
 
 Also, \textbf{bulletproofs}' \textbf{inner-product argument} could be used to build various polynomial commitment schemes -- crucial building block of proving systems built with \textit{IOP} framework (\textit{Halo, Nova, etc}).
 
@@ -39,7 +39,7 @@ During $\mathsf{Setup}$ parties agree on group elements $G,B \in \mathbb{G}$. Af
 \begin{itemize}
     \item Prover $\mathcal{P}$ computes:
         $$t(x) = l(x)r(x) = (a+s_L x)(b+s_R x) = ab + (as_R + bs_L) + s_L s_R x^2$$
-    \item Prover $\mathcal{P}$ draws blinding factors $\alpha_0, \alpha_1, \beta_0, \beta_1, \tau_0, \tau_1, \tau_2 \xleftarrow{R} \mathbb{F}_p$ forming blinding polynomials 
+    \item Prover $\mathcal{P}$ draws blinding factors $\alpha_0, \alpha_1, \beta_0, \beta_1, \tau_0, \tau_1, \tau_2 \leftarrowS \mathbb{F}_p$ forming blinding polynomials 
     $$\alpha(x) = \alpha_0 + \alpha_1 x, \beta(x) = \beta_0 + \beta_1 x, \tau(x) = \tau_0 + \tau_1 x + \tau_2 x^2$$
     and sends to $\mathcal{V}$ Pedersen commitments (\Cref{section:commitment-schemes}) for each coefficient of $l(x), r(x), t(x)$:
         \begin{equation}
@@ -55,7 +55,7 @@ During $\mathsf{Setup}$ parties agree on group elements $G,B \in \mathbb{G}$. Af
         \begin{remark}
             Each commitment could be also seen as a Pedersen commitment to a reciprocal blinding polynomial coefficient as well.
         \end{remark}
-    \item Verifier $\mathcal{V}$ samples and sends to $\mathcal{P}$ random evaluation point $u \xleftarrow{R} \mathbb{F}_p$
+    \item Verifier $\mathcal{V}$ samples and sends to $\mathcal{P}$ random evaluation point $u \leftarrowS \mathbb{F}_p$
     \item Prover $\mathcal{P}$ evaluates $l(x),r(x),t(x)$ and $\alpha(x), \beta(x), \tau(x)$ at $u$:
         \begin{equation}
             \begin{aligned}
@@ -134,7 +134,7 @@ We could optimize our \textbf{polynomial multiplication protocol} furthermore. N
             \begin{itemize}
                 \item Prover $\mathcal{P}$ computes:
                     $$t(x) = l(x)r(x) = (a+s_L x)(b+s_R x) = ab + (as_R + bs_L) + s_L s_R x^2$$
-                \item Prover $\mathcal{P}$ draws blinding factors $\alpha, \beta, \tau_0, \tau_1, \tau_2 \xleftarrow{R} \mathbb{F}_p$ and sends to $\mathcal{V}$ the following commitments for coefficients of $l(x), r(x), t(x)$:
+                \item Prover $\mathcal{P}$ draws blinding factors $\alpha, \beta, \tau_0, \tau_1, \tau_2 \leftarrowS \mathbb{F}_p$ and sends to $\mathcal{V}$ the following commitments for coefficients of $l(x), r(x), t(x)$:
                     \begin{equation}
                         \begin{aligned}
                             A &= [a]G + [b]H + [\alpha]B\\
@@ -145,7 +145,7 @@ We could optimize our \textbf{polynomial multiplication protocol} furthermore. N
                             T_2 &= [s_L s_R]G + [\tau_2]B
                         \end{aligned}
                     \end{equation}
-                \item Verifier $\mathcal{V}$ samples and sends to $\mathcal{P}$ random evaluation point $u \xleftarrow{R} \mathbb{F}_p$
+                \item Verifier $\mathcal{V}$ samples and sends to $\mathcal{P}$ random evaluation point $u \leftarrowS \mathbb{F}_p$
                 \item Prover $\mathcal{P}$ evaluates polynomials at $u$:
                     \begin{equation}
                         \begin{aligned}
@@ -186,7 +186,7 @@ Where $G,H,B \in \mathbb{G}$ are generators with unknown discrete log relations,
 \begin{definition}
     The \textbf{multiplication protocol} $\Pi_{abc} = (\mathcal{P,V})$ for the relation $\mathcal{R}_{abc}$ with prover $\mathcal{P}$ and verifier $\mathcal{V}$ is defined as follows:
     \begin{itemize}
-        \item Prover $\mathcal{P}$ draws random $s_L, s_R \xleftarrow{R} \mathbb{F}_p$ and defines polynomials: $$l(x)=a+s_L x,\quad r(x)=b+s_R x,\quad t(x)=l(x)r(x)$$
+        \item Prover $\mathcal{P}$ draws random $s_L, s_R \leftarrowS \mathbb{F}_p$ and defines polynomials: $$l(x)=a+s_L x,\quad r(x)=b+s_R x,\quad t(x)=l(x)r(x)$$
         \item Parties run $\Pi_{mul}$ on inputs $(l(x),r(x),t(x))$ along with provided a-priori setup $G,H,B \in \mathbb{G}$ and commitments $A, T_0$
     \end{itemize}
 \end{definition}
@@ -196,7 +196,7 @@ The protocol obviously has \textit{perfect completeness, special soundness, perf
     Now curious reader may wonder why build so overwhelmingly complicated protocol for simple multiplication and not just use classic \textit{Chaum-Pedersen protocol} for DH-triplets? Indeed, it definitely could establish that for given group elements $[a]G, [b]G, [c]G$ equality $c=ab$ holds, but unfortunately commitments $[a]G, [b]G, [c]G$ do not have a \textit{perfect hiding} property (though preserving \textit{computational binding} property) so an adversary could potentially learn $a,b,c$ values especially if they are small or have non-uniform distribution.
 \end{remark}
 
-Also, there's a folklore version of very similar protocol for establishing product relationship between Pedersen committed values described in \cite[section 12]{thaler}.
+Also, there's a folklore version of very similar protocol for establishing product relationship between Pedersen committed values described in \cite[section 12]{thaler2022proofs}.
 
 \subsubsection{Zero-knowledge inner-product protocol}
 
@@ -235,7 +235,7 @@ So the constant term is the inner-product $\langle \mathbf{a}, \mathbf{b} \rangl
                 \mathbf{r}(x) &= \mathbf{b} + \mathbf{s}_R x \\
                 t(x) &= \langle \mathbf{l}(x), \mathbf{r}(x) \rangle = \langle \mathbf{a}, \mathbf{b} \rangle + (\langle \mathbf{a}, \mathbf{s}_R \rangle + \langle \mathbf{s}_L, \mathbf{b} \rangle) x + \langle \mathbf{s}_L, \mathbf{s}_R \rangle x^2
             \end{align*}
-        \item Prover $\mathcal{P}$ draws blinding factors $\beta, \tau_1, \tau_2 \xleftarrow{R} \mathbb{F}_p$ and sends to $\mathcal{V}$ the following commitments for coefficients of $\mathbf{l}(x), \mathbf{r}(x), \mathbf{t}(x)$:
+        \item Prover $\mathcal{P}$ draws blinding factors $\beta, \tau_1, \tau_2 \leftarrowS \mathbb{F}_p$ and sends to $\mathcal{V}$ the following commitments for coefficients of $\mathbf{l}(x), \mathbf{r}(x), \mathbf{t}(x)$:
             \begin{equation}
                 \begin{aligned}
                     S &= \langle \mathbf{s}_L, \mathbf{G} \rangle + \langle \mathbf{s}_R, \mathbf{H} \rangle + [\beta]B\\
@@ -243,7 +243,7 @@ So the constant term is the inner-product $\langle \mathbf{a}, \mathbf{b} \rangl
                     T_2 &= [\langle \mathbf{s}_L \mathbf{s}_R \rangle]G + [\tau_2]B
                 \end{aligned}
             \end{equation}
-        \item Verifier $\mathcal{V}$ samples and sends to $\mathcal{P}$ random evaluation point $u \xleftarrow{R} \mathbb{F}_p$
+        \item Verifier $\mathcal{V}$ samples and sends to $\mathcal{P}$ random evaluation point $u \leftarrowS \mathbb{F}_p$
         \item Prover $\mathcal{P}$ evaluates polynomials at $u$:
             \begin{equation}
                 \begin{aligned}
@@ -287,7 +287,7 @@ $$P' = \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle + [\langle \m
     The \textbf{inner-product} protocol $\Pi_{ip} = (\mathcal{P}, \mathcal{V})$ for relation $\mathcal{R}_{ip} = \{ (\mathbf{G,H}, P, c; \mathbf{a,b}) \vert P = \langle \mathbf{a,G} \rangle + \langle \mathbf{b,H} \rangle \wedge \langle \mathbf{a,b} \rangle = c \}$ with prover $\mathcal{P}$, verifier $\mathcal{V}$ is defined as follows:
     \begin{itemize}
         \item Parties $\mathcal{P, V}$ agree on some group element $B \in \mathbb{G}$ with unknown discrete log
-        \item Verifier $\mathcal{V}$ samples random $r \xleftarrow{R} \mathbb{F}_p$ and sends it to prover $\mathcal{P}$
+        \item Verifier $\mathcal{V}$ samples random $r \leftarrowS \mathbb{F}_p$ and sends it to prover $\mathcal{P}$
         \item Parties $\mathcal{P, V}$ compute $Q \gets [r]B$ and $P' = P + [c]Q$
         \item Parties run protocol $\Pi'_{ip}$ for relation $\mathcal{R}'_{ip}$ on input $(\mathbf{G,H}, Q, P'; \mathbf{a,b})$
     \end{itemize}
@@ -373,7 +373,7 @@ Let's describe the \textbf{inner-product} protocol $\Pi'_{ip}$ for relation $\ma
                         R_{k} &= \langle \mathbf{a_{hi}}^{(k)}, \mathbf{G_{lo}}^{(k)}\rangle + \langle \mathbf{b_{lo}}^{(k)}, \mathbf{H_{hi}}^{(k)}\rangle + [\langle \mathbf{a_{hi}}^{(k)}, \mathbf{b_{lo}}^{(k)}\rangle]Q
                     \end{align*}
                 \item $\mathcal{P}$ sends $(L_k, R_k)$ to $\mathcal{V}$
-                \item $\mathcal{V}$ draws challenge $u_k \xleftarrow{R} \mathbb{F}_p$ and sends it to $\mathcal{P}$
+                \item $\mathcal{V}$ draws challenge $u_k \leftarrowS \mathbb{F}_p$ and sends it to $\mathcal{P}$
                 \item Both $\mathcal{P}$ and $\mathcal{V}$ compute:
                     \begin{align*}
                         \mathbf{G}^{(k-1)} &= \mathbf{G_{lo}}^{(k)} \cdot u_k^{-1} + u_k \cdot \mathbf{G_{hi}}^{(k)} \\
@@ -424,7 +424,7 @@ Let's describe the \textbf{inner-product} protocol $\Pi'_{ip}$ for relation $\ma
 
         % Step 3: Challenge
         \node[draw,rounded corners,fill=white,below=4cm of V,align=left] (pchelV) {%
-            \small $u_k \xleftarrow{R} \mathbb{F}_p$
+            \small $u_k \leftarrowS \mathbb{F}_p$
         };
 
 
@@ -561,7 +561,7 @@ The main approach to make \textit{inner-product argument} \textit{zero-knowledge
 
 The key idea is to bring a blinding factor $\delta \in \mathbb{F}_p$ with a verifier-provided random element $D \in \mathbb{G}$ to the commitment $P_k$:
 $$ P_k = \langle \mathbf{a}^{(k)}, \mathbf{G}^{(k)} \rangle + \langle \mathbf{b}^{(k)}, \mathbf{H}^{(k)} \rangle + [\langle \mathbf{a}^{(k)}, \mathbf{b}^{(k)} \rangle]Q + [\delta^{(k)}]D $$
-To get $L_k, R_k$ prover draws $\delta^{(k)}_L, \delta^{(k)}_R \xleftarrow{R} \mathbb{F}_p$ and sets:
+To get $L_k, R_k$ prover draws $\delta^{(k)}_L, \delta^{(k)}_R \leftarrowS \mathbb{F}_p$ and sets:
 \begin{align*}
     P_{k-1} &= P_k + [u_k^2] L_k + [u_k^{-2}] R_k \\
     L_{k} &= \langle \mathbf{a_{lo}}^{(k)}, \mathbf{G_{hi}}^{(k)}\rangle + \langle \mathbf{b_{hi}}^{(k)}, \mathbf{H_{lo}}^{(k)}\rangle + [\langle \mathbf{a_{lo}}^{(k)}, \mathbf{b_{hi}}^{(k)}\rangle]Q + [\delta^{(k)}_L]D \\
@@ -577,12 +577,12 @@ On the last step prover must prove that he possesses $a = a^{(0)}, b = b^{(0)}, 
 
 $P_0 = P_k + \sum_{i=1}^k ([u_i^2]L_i + [u_i^{-2}]R_i)$ is a Pedersen commitment to $a, b, a \cdot b$ with blinding factor $\delta$ and could easily be computed by verifier. One could prove knowledge of an opening $(a,b,\delta)$ to that commitment using protocol similar to $\Pi_{zkip}$.
 \begin{enumerate}
-    \item $\mathcal{P}$ draws blinders $u,v,r,s \xleftarrow{R} \mathbb{F}_p$ and sends to $\mathcal{V}$ commitments:
+    \item $\mathcal{P}$ draws blinders $u,v,r,s \leftarrowS \mathbb{F}_p$ and sends to $\mathcal{V}$ commitments:
     \begin{align*}
         A &= [r]G + [s]H + [as + br]Q + [u]D \\
         T &= [rs]Q + [v]D
     \end{align*}
-    \item $\mathcal{V}$ draws challenge $c \xleftarrow{R} \mathbb{F}_p$ and sends it to $\mathcal{P}$
+    \item $\mathcal{V}$ draws challenge $c \leftarrowS \mathbb{F}_p$ and sends it to $\mathcal{P}$
     \item $\mathcal{P}$ evaluates and sends to $\mathcal{V}$:
     \begin{align*}
         a' &= a + rc \\
@@ -712,7 +712,7 @@ So that $\langle \mathbf{l}_0, \mathbf{r}_0 \rangle = z^2v + \delta(y,z)$ -- inn
                 A = \langle \mathbf{a}_L, \mathbf{G} \rangle + \langle \mathbf{b_L}, \mathbf{H} \rangle + [\alpha]B\\
                 S = \langle \mathbf{s}_L, \mathbf{G} \rangle + \langle \mathbf{s}_R, \mathbf{H} \rangle + [\beta]B
             \end{align*}
-        \item Verifier $\mathcal{V}$ samples challenges $y, z \xleftarrow{R} \mathbb{F}_p$ and sends them to $\mathcal{P}$
+        \item Verifier $\mathcal{V}$ samples challenges $y, z \leftarrowS \mathbb{F}_p$ and sends them to $\mathcal{P}$
         \item Prover $\mathcal{P}$ combines the three inner products into one using provided challenges $y,z$ (\ref{eq:inner_product_check}) and reconstructs vector  polynomials $\mathbf{l}(x), \mathbf{r}(x), \mathbf{t}(x)$:
             \begin{equation*}
                 \begin{aligned}
@@ -729,7 +729,7 @@ So that $\langle \mathbf{l}_0, \mathbf{r}_0 \rangle = z^2v + \delta(y,z)$ -- inn
                     t_2 & = \langle \mathbf{s}_L, \mathbf{y}^n \circ \mathbf{s}_R \rangle
                 \end{aligned}
             \end{equation*}
-        \item Prover $\mathcal{P}$ draws blinding factors $\tau_1, \tau_2 \xleftarrow{R} \mathbb{F}_p$ and sends to $\mathcal{V}$ the following commitments for coefficients of $\mathbf{t}(x)$:
+        \item Prover $\mathcal{P}$ draws blinding factors $\tau_1, \tau_2 \leftarrowS \mathbb{F}_p$ and sends to $\mathcal{V}$ the following commitments for coefficients of $\mathbf{t}(x)$:
             \begin{equation}
                 \begin{aligned}
                     T_1 &= [t_1]G + [\tau_1]B \\
@@ -737,7 +737,7 @@ So that $\langle \mathbf{l}_0, \mathbf{r}_0 \rangle = z^2v + \delta(y,z)$ -- inn
                 \end{aligned}
             \end{equation}
             \textbf{Note:} prover does not have to send commitment to $t_0$ as it's the inner-product we want to prove and it could be computed from high-level commitment $V$.
-        \item Verifier $\mathcal{V}$ samples and sends to $\mathcal{P}$ random evaluation point $u \xleftarrow{R} \mathbb{F}_p$
+        \item Verifier $\mathcal{V}$ samples and sends to $\mathcal{P}$ random evaluation point $u \leftarrowS \mathbb{F}_p$
         \item Prover $\mathcal{P}$ evaluates polynomials at $u$:
             \begin{equation}
                 \begin{aligned}
@@ -1154,7 +1154,7 @@ Our proving strategy is the same as in the \textit{range-proof} case:
                 S &= \langle \mathbf{s}_L, \mathbf{G} \rangle + \langle \mathbf{s}_R, \mathbf{H} \rangle + [\beta]B
             \end{aligned}
         \end{equation*}
-        \item Verifier samples challenges $y,z \xleftarrow{R} \mathbb{F}_p$ and sends them to $\mathcal{P}$.
+        \item Verifier samples challenges $y,z \leftarrowS \mathbb{F}_p$ and sends them to $\mathcal{P}$.
         \item Using provided challenges $y,z$ prover forms polynomials $\mathbf{l}(x), \mathbf{r}(x)$:
         \begin{equation*}
             \begin{aligned}
@@ -1178,7 +1178,7 @@ Our proving strategy is the same as in the \textit{range-proof} case:
             t_2 &= w_c + \langle \mathbf{w}_V, \mathbf{v} \rangle + \delta(y, z) \\
             T_2 &= \langle \mathbf{w}_V, \mathbf{V} \rangle + [\delta(y, z) + w_c]G
         \end{align*}
-        \item Verifier samples and sends to $\mathcal{P}$ random evaluation point $u \xleftarrow{R} \mathbb{F}_p$.
+        \item Verifier samples and sends to $\mathcal{P}$ random evaluation point $u \leftarrowS \mathbb{F}_p$.
         \item Prover evaluates polynomials at $u$:
             \begin{equation*}
                 \begin{aligned}
